@@ -6,7 +6,7 @@ set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(_NEED_REBUILD TRUE)
 set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
-set(_DEP_VER 1.76.0)
+set(_DEP_VER 1.71.0)
 string(REPLACE "." "_" _DEP_VER_ "${_DEP_VER}")
 set(_DEP_URL https://boostorg.jfrog.io/artifactory/main/release/${_DEP_VER}/source/${_DEP_NAME}_${_DEP_VER_}.tar.gz)
 
@@ -61,19 +61,7 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHE
         message(STATUS "Installing ${_DEP_NAME} b2 - done")
     endif ()
 
-    if (NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/src/PHASE_BOOTSTRAP)
-        message(STATUS "Bootstrap ${_DEP_NAME}")
-        execute_process(
-                COMMAND ./bootstrap.sh --without-libraries=mpi,python,graph,graph_parallel
-                WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
-                RESULT_VARIABLE rc)
-        if (NOT "${rc}" STREQUAL "0")
-            message(FATAL_ERROR "Bootstrap ${_DEP_NAME} - FAIL")
-        endif ()
-        message(STATUS "Bootstrap ${_DEP_NAME} - done")
-        file(WRITE ${CMAKE_CURRENT_LIST_DIR}/src/PHASE_BOOTSTRAP "done")
-    endif ()
-
+    # build
     if (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}_system.a)
         message(STATUS "Building ${_DEP_NAME}")
         include(ProcessorCount)
@@ -130,6 +118,11 @@ endif ()
 AppendCMakePrefix()
 set(BOOST_ROOT ${_DEP_PREFIX})
 set(Boost_NO_SYSTEM_PATHS ON)
+
+# see https://stackoverflow.com/questions/6646405/how-do-you-add-boost-libraries-in-cmakelists-txt
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+endif()
 
 find_package(Boost 1.76)
 
