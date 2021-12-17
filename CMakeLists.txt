@@ -1,0 +1,22 @@
+PROJECT(CmakeExternalLibrary)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
+
+include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
+set(CHECK_FILE "check.cmake")
+set(LIBRARIES fmt dpdk protobuf boost seastar)
+
+set(BUILD_EXTERNAL_LIBRARY TRUE)
+#set(BUILD_FMT FALSE)
+
+if (${BUILD_EXTERNAL_LIBRARY})
+    message(STATUS "build external library")
+    foreach (LIBRARY IN LISTS LIBRARIES)
+        string(TOUPPER ${LIBRARY} UPPER_LIBRARY)
+        if ((NOT DEFINED BUILD_${UPPER_LIBRARY}) OR (${BUILD_${UPPER_LIBRARY}}))
+            message(STATUS "begin to build library ${LIBRARY}")
+            include(${CMAKE_CURRENT_LIST_DIR}/${LIBRARY}/${CHECK_FILE})
+        else ()
+            message(STATUS "skip build library ${LIBRARY}")
+        endif ()
+    endforeach ()
+endif ()
