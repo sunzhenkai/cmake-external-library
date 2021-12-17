@@ -25,9 +25,8 @@ SetDepPath()
 message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "
         "${_DEP_UNAME}_INCLUDE_DIR=${${_DEP_UNAME}_INCLUDE_DIR}")
 
-FindStaticLibrary()
-set(_DEP_NAME_SPACE ${_DEP_NAME}_nothreads)
-FindStaticLibrary()
+AppendCMakePrefix()
+find_package(fmt REQUIRED CONFIG)
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)

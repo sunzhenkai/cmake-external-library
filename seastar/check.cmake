@@ -1,4 +1,4 @@
-#include(${CMAKE_CURRENT_LIST_DIR}/../boost/check.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../boost/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../fmt/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../protobuf/check.cmake)
 
@@ -41,6 +41,7 @@ SetDepPath()
 message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "
         "${_DEP_UNAME}_INCLUDE_DIR=${${_DEP_UNAME}_INCLUDE_DIR}")
 
+set(_FIND_DEP_NAME Seastar)
 FindStaticLibrary()
 
 unset(_DEP_NAME)

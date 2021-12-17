@@ -86,18 +86,32 @@ function(SetDepPath)
     endif ()
 endfunction()
 
+function(AppendCMakePrefix)
+    list(FIND CMAKE_PREFIX_PATH ${_DEP_PREFIX} _DEP_INDEX)
+    if (_DEP_INDEX EQUAL -1)
+        list(APPEND CMAKE_PREFIX_PATH ${_DEP_PREFIX})
+        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
+    endif ()
+endfunction()
+
 function(FindStaticLibrary)
     set(_VARS _DEP_NAME _DEP_LIB_DIR _DEP_INCLUDE_DIR)
     CheckVars()
     if (NOT DEFINED _DEP_NAME_SPACE)
         set(_DEP_NAME_SPACE ${_DEP_NAME})
     endif ()
+    if (NOT DEFINED _FIND_DEP_NAME)
+        set(_FIND_DEP_NAME ${_DEP_NAME})
+    endif ()
 
-    message(STATUS "Try to add library ${_DEP_NAME}::${_DEP_NAME_SPACE}")
-    if (NOT TARGET ${_DEP_NAME}::${_DEP_NAME_SPACE} AND EXISTS ${_DEP_LIB_DIR}/lib${_DEP_NAME_SPACE}.a)
-        message(STATUS "Add library ${_DEP_NAME}::${_DEP_NAME_SPACE}")
-        add_library(${_DEP_NAME}::${_DEP_NAME_SPACE} STATIC IMPORTED)
-        set_target_properties(${_DEP_NAME}::${_DEP_NAME_SPACE} PROPERTIES
+    AppendCMakePrefix()
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
+
+    message(STATUS "Try to add library ${_FIND_DEP_NAME}::${_DEP_NAME_SPACE}")
+    if (NOT TARGET ${_FIND_DEP_NAME}::${_DEP_NAME_SPACE} AND EXISTS ${_DEP_LIB_DIR}/lib${_DEP_NAME_SPACE}.a)
+        message(STATUS "Add library ${_FIND_DEP_NAME}::${_DEP_NAME_SPACE}")
+        add_library(${_FIND_DEP_NAME}::${_DEP_NAME_SPACE} STATIC IMPORTED GLOBAL)
+        set_target_properties(${_FIND_DEP_NAME}::${_DEP_NAME_SPACE} PROPERTIES
                 IMPORTED_LOCATION "${_DEP_LIB_DIR}/lib${_DEP_NAME_SPACE}.a"
                 INTERFACE_INCLUDE_DIRECTORIES "${_DEP_INCLUDE_DIR}")
     endif ()
@@ -314,7 +328,7 @@ function(MakeInstall)
     set(_VARS _DEP_NAME _DEP_CUR_DIR _DEP_PREFIX)
     CheckVars()
 
-    if(NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a)
+    if (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a)
         message(STATUS "Installing ${_DEP_NAME}")
         execute_process(
                 COMMAND env
@@ -324,9 +338,9 @@ function(MakeInstall)
                 install
                 WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
                 RESULT_VARIABLE rc)
-        if(NOT "${rc}" STREQUAL "0")
+        if (NOT "${rc}" STREQUAL "0")
             message(FATAL_ERROR "Installing ${_DEP_NAME} - FAIL")
-        endif()
+        endif ()
         message(STATUS "Installing ${_DEP_NAME} - done")
-    endif()
+    endif ()
 endfunction()

@@ -127,6 +127,7 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHE
     endif ()
 endif ()
 
+AppendCMakePrefix()
 set(BOOST_ROOT ${_DEP_PREFIX})
 set(Boost_NO_SYSTEM_PATHS ON)
 
