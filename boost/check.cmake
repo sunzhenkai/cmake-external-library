@@ -6,7 +6,7 @@ set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(_NEED_REBUILD TRUE)
 set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
-set(_DEP_VER 1.71.0)
+set(_DEP_VER 1.76.0)
 string(REPLACE "." "_" _DEP_VER_ "${_DEP_VER}")
 set(_DEP_URL https://boostorg.jfrog.io/artifactory/main/release/${_DEP_VER}/source/${_DEP_NAME}_${_DEP_VER_}.tar.gz)
 
@@ -119,12 +119,12 @@ AppendCMakePrefix()
 set(BOOST_ROOT ${_DEP_PREFIX})
 set(Boost_NO_SYSTEM_PATHS ON)
 
+find_package(Boost 1.76 COMPONENTS ALL)
 # see https://stackoverflow.com/questions/6646405/how-do-you-add-boost-libraries-in-cmakelists-txt
-if(Boost_FOUND)
+if(${Boost_FOUND})
+    message(STATUS "Boost Boost_INCLUDE_DIRS=${Boost_INCLUDE_DIRS}, Boost_LIBRARIES=${Boost_LIBRARIES}")
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
-
-find_package(Boost 1.76)
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)
