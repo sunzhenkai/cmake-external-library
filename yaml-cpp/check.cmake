@@ -22,13 +22,19 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHE
     CMakeNinja()
     NinjaBuild()
     NinjaInstall()
-endif()
+endif ()
 
 SetDepPath()
 set(yaml-cpp_LIBRARY ${_DEP_LIB_DIR}/libyaml-cpp.a CACHE FILEPATH "" FORCE)
 set(yaml-cpp_INCLUDE_DIR ${_DEP_INCLUDE_DIR} CACHE PATH "" FORCE)
-SetDepPrefix()
+AppendCMakePrefix()
 find_package(yaml-cpp REQUIRED CONFIG)
+
+if (${yaml-cpp_FOUND})
+    message(STATUS "yaml-cpp founded")
+else ()
+    message(FATAL_ERROR "yaml-cpp not found")
+endif ()
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)

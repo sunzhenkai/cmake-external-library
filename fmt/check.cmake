@@ -1,6 +1,7 @@
 get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
 string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
 
+#set(_DEP_VER 6.2.1)
 set(_DEP_VER 5.3.0)
 set(_DEP_URL https://github.com/fmtlib/fmt/archive/${_DEP_VER}.tar.gz)
 
@@ -22,10 +23,11 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a))
 endif ()
 
 SetDepPath()
-message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "
-        "${_DEP_UNAME}_INCLUDE_DIR=${${_DEP_UNAME}_INCLUDE_DIR}")
-
 AppendCMakePrefix()
+#FindStaticLibrary()
+message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "
+        "${_DEP_UNAME}_INCLUDE_DIR=${${_DEP_UNAME}_INCLUDE_DIR}, CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
+
 find_package(fmt REQUIRED CONFIG)
 
 unset(_DEP_NAME)

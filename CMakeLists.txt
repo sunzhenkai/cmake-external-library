@@ -3,7 +3,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
 
 include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 set(CHECK_FILE "check.cmake")
-set(LIBRARIES fmt dpdk protobuf boost seastar yaml-cpp)
+set(LIBRARIES fmt dpdk protobuf boost seastar yaml-cpp openssl cryptopp)
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)
 #set(BUILD_FMT FALSE)

@@ -18,7 +18,9 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHE
     DownloadDep()
     ExtractDep()
     Autogen()
+    set(_EXTRA_DEFINE --enable-shared=no)
     Configure()
+    set(_BUILD_LIB_DIR ".libs")
     MakeBuild()
     MakeInstall()
 endif ()
@@ -29,7 +31,7 @@ message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "
 
 message(STATUS "${_DEP_NAME} LIB_DIR: ${_DEP_LIB_DIR}")
 
-SetDepPrefix()
+AppendCMakePrefix()
 set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Protobuf REQUIRED)
 

@@ -25,6 +25,8 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a))
     NinjaInstall()
 endif ()
 
+AppendCMakePrefix()
+
 unset(_DEP_NAME)
 unset(_DEP_UNAME)
 unset(_DEP_VER)

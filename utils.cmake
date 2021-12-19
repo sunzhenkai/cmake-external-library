@@ -95,18 +95,23 @@ function(SetDepPath)
     CheckVars()
 
     if (EXISTS ${_DEP_PREFIX}/bin)
+        set(_DEP_BIN_DIR ${_DEP_PREFIX}/bin)
         set(_DEP_BIN_DIR ${_DEP_PREFIX}/bin PARENT_SCOPE)
         set(${_DEP_UNAME}_BIN_DIR ${_DEP_BIN_DIR} PARENT_SCOPE)
     endif ()
     if (EXISTS ${_DEP_PREFIX}/lib)
+        set(_DEP_LIB_DIR ${_DEP_PREFIX}/lib)
         set(_DEP_LIB_DIR ${_DEP_PREFIX}/lib PARENT_SCOPE)
+        set(${_DEP_UNAME}_LIB_DIR ${_DEP_LIB_DIR})
         set(${_DEP_UNAME}_LIB_DIR ${_DEP_LIB_DIR} PARENT_SCOPE)
     endif ()
     if (EXISTS ${_DEP_PREFIX}/lib64)
+        set(_DEP_LIB_DIR ${_DEP_PREFIX}/lib64)
         set(_DEP_LIB_DIR ${_DEP_PREFIX}/lib64 PARENT_SCOPE)
         set(${_DEP_UNAME}_LIB_DIR ${_DEP_LIB_DIR} PARENT_SCOPE)
     endif ()
     if (EXISTS ${_DEP_PREFIX}/include)
+        set(_DEP_INCLUDE_DIR ${_DEP_PREFIX}/include)
         set(_DEP_INCLUDE_DIR ${_DEP_PREFIX}/include PARENT_SCOPE)
         set(${_DEP_UNAME}_INCLUDE_DIR ${_DEP_INCLUDE_DIR} PARENT_SCOPE)
     endif ()
@@ -144,12 +149,12 @@ function(FindStaticLibrary)
 endfunction()
 
 function(DownloadDep)
-    set(_VARS _DEP_NAME _DEP_CUR_DIR _DEP_URL)
+    set(_VARS _DEP_NAME _DEP_VER _DEP_CUR_DIR _DEP_URL)
     CheckVars()
 
-    if (NOT EXISTS ${_DEP_CUR_DIR}/packages/${_DEP_NAME}.tar.gz)
+    if (NOT EXISTS ${_DEP_CUR_DIR}/packages/${_DEP_NAME}-${_DEP_VER}.tar.gz)
         file(MAKE_DIRECTORY ${_DEP_CUR_DIR}/packages)
-        set(_DEST ${CMAKE_CURRENT_LIST_DIR}/packages/${_DEP_NAME}.tar.gz)
+        set(_DEST ${CMAKE_CURRENT_LIST_DIR}/packages/${_DEP_NAME}-${_DEP_VER}.tar.gz)
         message(STATUS "Downloading ${_DEP_NAME}:${_DEP_URL}, DEST=${_DEST}")
         execute_process(
                 COMMAND wget -O ${_DEST} ${_DEP_URL}
@@ -162,7 +167,7 @@ function(DownloadDep)
 endfunction()
 
 function(ExtractDep)
-    set(_VARS _DEP_NAME _DEP_CUR_DIR)
+    set(_VARS _DEP_NAME _DEP_VER _DEP_CUR_DIR)
     CheckVars()
 
     set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/src)
@@ -171,7 +176,7 @@ function(ExtractDep)
         file(MAKE_DIRECTORY ${_DEP_CUR_DIR}/src)
         message(STATUS "Extracting ${_DEP_NAME}")
         execute_process(
-                COMMAND tar -xf ${_DEP_CUR_DIR}/packages/${_DEP_NAME}.tar.gz
+                COMMAND tar -xf ${_DEP_CUR_DIR}/packages/${_DEP_NAME}-${_DEP_VER}.tar.gz
                 --strip-components 1 -C ${_DEP_CUR_DIR}/src
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
@@ -185,11 +190,11 @@ function(CMakeNinja)
     set(_VARS _DEP_NAME _DEP_CUR_DIR _DEP_PREFIX)
     CheckVars()
 
-    set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/build)
-    IsEmpty()
-    if (_DIR_TO_CHECK_SIZE EQUAL 0)
+    if (NOT EXISTS ${_DEP_CUR_DIR}/build/build.ninja)
         file(MAKE_DIRECTORY ${_DEP_CUR_DIR}/build)
-        message(STATUS "Configuring ${_DEP_NAME}")
+        string(REPLACE ";" "\\;" CMAKE_PREFIX_PATH_STR "${CMAKE_PREFIX_PATH}")
+        message(STATUS "Configuring ${_DEP_NAME}, CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}, "
+                "CMAKE_PREFIX_PATH_STR ${CMAKE_PREFIX_PATH_STR}")
         execute_process(
                 COMMAND ${CMAKE_COMMAND}
                 -G Ninja
@@ -198,6 +203,7 @@ function(CMakeNinja)
                 -DBUILD_SHARED_LIBS=OFF
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
                 ${_EXTRA_DEFINE}
                 ${_DEP_CUR_DIR}/src
                 WORKING_DIRECTORY ${_DEP_CUR_DIR}/build
@@ -306,6 +312,14 @@ function(Configure)
     set(_VARS _DEP_NAME _DEP_CUR_DIR)
     CheckVars()
 
+    if (EXISTS ${_DEP_CUR_DIR}/src/configure)
+        set(CONFIG_CMD configure)
+    elseif (EXISTS ${_DEP_CUR_DIR}/src/config)
+        set(CONFIG_CMD config)
+    else ()
+        message(FATAL_ERROR "Config command (configure or config) not found")
+    endif ()
+
     if (NOT EXISTS ${_DEP_CUR_DIR}/src/PHASE_CONFIGURE)
         message(STATUS "Configuring ${_DEP_NAME}")
         execute_process(
@@ -314,9 +328,9 @@ function(Configure)
                 CXX=${CMAKE_CXX_COMPILER}
                 CFLAGS=-fPIC
                 CXXFLAGS=-fPIC
-                ./configure
+                ./${CONFIG_CMD}
                 --prefix=${_DEP_PREFIX}
-                --enable-shared=no
+                ${_EXTRA_DEFINE}
                 WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
@@ -331,7 +345,7 @@ function(MakeBuild)
     set(_VARS _DEP_NAME _DEP_CUR_DIR)
     CheckVars()
 
-    if (NOT EXISTS ${_DEP_CUR_DIR}/src/src/.libs/lib${_DEP_NAME}.a)
+    if (NOT EXISTS ${_DEP_CUR_DIR}/src/src/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
         message(STATUS "Building ${_DEP_NAME}")
         include(ProcessorCount)
         ProcessorCount(cpus)
@@ -341,6 +355,7 @@ function(MakeBuild)
                 CXX=${CMAKE_CXX_COMPILER}
                 make
                 -j${cpus}
+                ${_CMAKE_BUILD_EXTRA_DEFINE}
                 WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
@@ -362,6 +377,7 @@ function(MakeInstall)
                 CXX=${CMAKE_CXX_COMPILER}
                 make
                 install
+                ${_CMAKE_INSTALL_EXTRA_DEFINE}
                 WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
