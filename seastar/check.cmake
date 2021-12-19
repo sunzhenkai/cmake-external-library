@@ -1,5 +1,7 @@
 include(${CMAKE_CURRENT_LIST_DIR}/../boost/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../fmt/check.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../yaml-cpp/check.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../cryptopp/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../protobuf/check.cmake)
 
 get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
