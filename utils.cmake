@@ -166,6 +166,36 @@ function(DownloadDep)
     endif ()
 endfunction()
 
+function(GitClone)
+    set(_VARS _DEP_NAME _DEP_VER _DEP_CUR_DIR _DEP_URL)
+    CheckVars()
+
+    find_package(Git REQUIRED)
+
+    set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/src)
+    IsEmpty()
+    if (_DIR_TO_CHECK_SIZE EQUAL 0)
+        message(STATUS "Cloning ${_DEP_NAME}: ${_DEP_URL}")
+        execute_process(
+                COMMAND "${GIT_EXECUTABLE}" clone ${_DEP_URL} src
+                WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Cloning ${_DEP_NAME}: ${_DEP_URL} - FAIL")
+        endif ()
+        message(STATUS "Cloning ${_DEP_NAME}: ${_DEP_URL} - done")
+        message(STATUS "Checking out ${_DEP_NAME}: ${_DEP_VER}")
+        execute_process(
+                COMMAND git checkout ${_DEP_VER}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/src
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Checking out ${_DEP_NAME}: ${_DEP_VER} - FAIL")
+        endif ()
+        message(STATUS "Checking out ${_DEP_NAME}: ${_DEP_VER} - done")
+    endif ()
+endfunction()
+
 function(ExtractDep)
     set(_VARS _DEP_NAME _DEP_VER _DEP_CUR_DIR)
     CheckVars()
@@ -190,6 +220,9 @@ function(CMakeNinja)
     set(_VARS _DEP_NAME _DEP_CUR_DIR _DEP_PREFIX)
     CheckVars()
 
+    if (NOT DEFINED _BUILD_TYPE)
+        set(_BUILD_TYPE Release)
+    endif ()
     if (NOT EXISTS ${_DEP_CUR_DIR}/build/build.ninja)
         file(MAKE_DIRECTORY ${_DEP_CUR_DIR}/build)
         string(REPLACE ";" "\\;" CMAKE_PREFIX_PATH_STR "${CMAKE_PREFIX_PATH}")
@@ -198,7 +231,7 @@ function(CMakeNinja)
         execute_process(
                 COMMAND ${CMAKE_COMMAND}
                 -G Ninja
-                -DCMAKE_BUILD_TYPE=Release
+                -DCMAKE_BUILD_TYPE=${_BUILD_TYPE}
                 -DCMAKE_INSTALL_PREFIX=${_DEP_PREFIX}
                 -DBUILD_SHARED_LIBS=OFF
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
