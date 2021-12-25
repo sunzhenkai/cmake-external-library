@@ -94,6 +94,7 @@ function(SetDepPath)
     set(_VARS _DEP_UNAME _DEP_PREFIX)
     CheckVars()
 
+    set(${_DEP_UNAME}_PREFIX ${_DEP_PREFIX} PARENT_SCOPE)
     if (EXISTS ${_DEP_PREFIX}/bin)
         set(_DEP_BIN_DIR ${_DEP_PREFIX}/bin)
         set(_DEP_BIN_DIR ${_DEP_PREFIX}/bin PARENT_SCOPE)
@@ -135,17 +136,25 @@ function(FindStaticLibrary)
         set(_FIND_DEP_NAME ${_DEP_NAME})
     endif ()
 
+    if (${_NO_SPACE})
+        set(_FINAL_FIND_DEP_NAME ${_DEP_NAME})
+    else ()
+        set(_FINAL_FIND_DEP_NAME ${_FIND_DEP_NAME}::${_DEP_NAME_SPACE})
+    endif ()
+
     AppendCMakePrefix()
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
 
-    message(STATUS "Try to add library ${_FIND_DEP_NAME}::${_DEP_NAME_SPACE}")
-    if (NOT TARGET ${_FIND_DEP_NAME}::${_DEP_NAME_SPACE} AND EXISTS ${_DEP_LIB_DIR}/lib${_DEP_NAME_SPACE}.a)
-        message(STATUS "Add library ${_FIND_DEP_NAME}::${_DEP_NAME_SPACE}")
-        add_library(${_FIND_DEP_NAME}::${_DEP_NAME_SPACE} STATIC IMPORTED GLOBAL)
-        set_target_properties(${_FIND_DEP_NAME}::${_DEP_NAME_SPACE} PROPERTIES
+    message(STATUS "Try to add library: ${_FINAL_FIND_DEP_NAME}")
+    if (NOT TARGET ${_FINAL_FIND_DEP_NAME} AND EXISTS ${_DEP_LIB_DIR}/lib${_DEP_NAME_SPACE}.a)
+        message(STATUS "Add library ${_FINAL_FIND_DEP_NAME}")
+        add_library(${_FINAL_FIND_DEP_NAME} STATIC IMPORTED GLOBAL)
+        set_target_properties(${_FINAL_FIND_DEP_NAME} PROPERTIES
                 IMPORTED_LOCATION "${_DEP_LIB_DIR}/lib${_DEP_NAME_SPACE}.a"
+                ${_FIND_STATIC_LIBRARY_EXTRA}
                 INTERFACE_INCLUDE_DIRECTORIES "${_DEP_INCLUDE_DIR}")
     endif ()
+    message(STATUS "ckpt;;;;sad ${${_FINAL_FIND_DEP_NAME}} ${_DEP_LIB_DIR}/lib${_DEP_NAME_SPACE}.a")
 endfunction()
 
 function(DownloadDep)
@@ -154,15 +163,19 @@ function(DownloadDep)
 
     if (NOT EXISTS ${_DEP_CUR_DIR}/packages/${_DEP_NAME}-${_DEP_VER}.tar.gz)
         file(MAKE_DIRECTORY ${_DEP_CUR_DIR}/packages)
-        set(_DEST ${CMAKE_CURRENT_LIST_DIR}/packages/${_DEP_NAME}-${_DEP_VER}.tar.gz)
-        message(STATUS "Downloading ${_DEP_NAME}:${_DEP_URL}, DEST=${_DEST}")
+        set(_DEST_DOWNLOADING ${_DEP_CUR_DIR}/packages/${_DEP_NAME}-${_DEP_VER}.downloading)
+        set(_DEST ${_DEP_CUR_DIR}/packages/${_DEP_NAME}-${_DEP_VER}.tar.gz)
+        message(STATUS "Downloading ${_DEP_NAME}:${_DEP_URL}, DEST=${_DEST_DOWNLOADING}")
         execute_process(
-                COMMAND wget -O ${_DEST} ${_DEP_URL}
+                COMMAND wget -O ${_DEST_DOWNLOADING} ${_DEP_URL}
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
             message(FATAL_ERROR "Downloading ${_DEP_NAME}: ${_DEP_URL} - FAIL")
         endif ()
-        message(STATUS "Downloading ${_DEP_NAME}: ${_DEP_URL} - done")
+        execute_process(
+                COMMAND mv ${_DEST_DOWNLOADING} ${_DEST}
+                RESULT_VARIABLE rc)
+        message(STATUS "Download ${_DEP_NAME}: ${_DEP_URL} - done")
     endif ()
 endfunction()
 
@@ -177,8 +190,8 @@ function(GitClone)
     if (_DIR_TO_CHECK_SIZE EQUAL 0)
         message(STATUS "Cloning ${_DEP_NAME}: ${_DEP_URL}")
         execute_process(
-                COMMAND "${GIT_EXECUTABLE}" clone ${_DEP_URL} src
-                WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+                COMMAND "${GIT_EXECUTABLE}" clone --recurse-submodules ${_DEP_URL} src
+                WORKING_DIRECTORY "${_DEP_CUR_DIR}"
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
             message(FATAL_ERROR "Cloning ${_DEP_NAME}: ${_DEP_URL} - FAIL")
@@ -187,7 +200,7 @@ function(GitClone)
         message(STATUS "Checking out ${_DEP_NAME}: ${_DEP_VER}")
         execute_process(
                 COMMAND git checkout ${_DEP_VER}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/src
+                WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
             message(FATAL_ERROR "Checking out ${_DEP_NAME}: ${_DEP_VER} - FAIL")
@@ -231,12 +244,14 @@ function(CMakeNinja)
         execute_process(
                 COMMAND ${CMAKE_COMMAND}
                 -G Ninja
+                -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
                 -DCMAKE_BUILD_TYPE=${_BUILD_TYPE}
                 -DCMAKE_INSTALL_PREFIX=${_DEP_PREFIX}
                 -DBUILD_SHARED_LIBS=OFF
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                 -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
+                -DCMAKE_POSITION_INDEPENDENT_CODE=ON
                 ${_EXTRA_DEFINE}
                 ${_DEP_CUR_DIR}/src
                 WORKING_DIRECTORY ${_DEP_CUR_DIR}/build
@@ -378,7 +393,17 @@ function(MakeBuild)
     set(_VARS _DEP_NAME _DEP_CUR_DIR)
     CheckVars()
 
-    if (NOT EXISTS ${_DEP_CUR_DIR}/src/src/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
+    set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/build)
+    IsEmpty()
+    if (_DIR_TO_CHECK_SIZE EQUAL 0)
+        set(_CHECK_ILB_FIFE ${_DEP_CUR_DIR}/src/src/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
+        set(_WORK_DIR ${_DEP_CUR_DIR}/src)
+    else ()
+        set(_CHECK_ILB_FIFE ${_DEP_CUR_DIR}/build/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
+        set(_WORK_DIR ${_DEP_CUR_DIR}/build)
+    endif ()
+
+    if (NOT EXISTS ${_CHECK_ILB_FIFE})
         message(STATUS "Building ${_DEP_NAME}")
         include(ProcessorCount)
         ProcessorCount(cpus)
@@ -389,7 +414,7 @@ function(MakeBuild)
                 make
                 -j${cpus}
                 ${_CMAKE_BUILD_EXTRA_DEFINE}
-                WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+                WORKING_DIRECTORY ${_WORK_DIR}
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
             message(FATAL_ERROR "Building ${_DEP_NAME} - FAIL")
@@ -417,5 +442,23 @@ function(MakeInstall)
             message(FATAL_ERROR "Installing ${_DEP_NAME} - FAIL")
         endif ()
         message(STATUS "Installing ${_DEP_NAME} - done")
+    endif ()
+endfunction()
+
+function(Bootstrap)
+    set(_VARS _DEP_NAME _DEP_CUR_DIR)
+    CheckVars()
+
+    if (NOT EXISTS ${_DEP_CUR_DIR}/src/PHASE_BOOTSTRAP)
+        message(STATUS "Bootstrap ${_DEP_NAME}")
+        execute_process(
+                COMMAND ./bootstrap.sh ${_BOOTSTRAP_OPTIONS}
+                WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Bootstrap ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Bootstrap ${_DEP_NAME} - done")
+        file(WRITE ${_DEP_CUR_DIR}/src/PHASE_BOOTSTRAP "done")
     endif ()
 endfunction()

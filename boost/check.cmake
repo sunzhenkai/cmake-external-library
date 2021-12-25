@@ -8,7 +8,11 @@ set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
 set(_DEP_VER 1.76.0)
 string(REPLACE "." "_" _DEP_VER_ "${_DEP_VER}")
-set(_DEP_URL https://boostorg.jfrog.io/artifactory/main/release/${_DEP_VER}/source/${_DEP_NAME}_${_DEP_VER_}.tar.gz)
+if (DEFINED ENV{OSS_URL})
+    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}_${_DEP_VER_}.tar.gz)
+else ()
+    set(_DEP_URL https://boostorg.jfrog.io/artifactory/main/release/${_DEP_VER}/source/${_DEP_NAME}_${_DEP_VER_}.tar.gz)
+endif ()
 
 SetDepPrefix()
 CheckVersion()
@@ -82,9 +86,9 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHE
                 --without-python
                 WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/src
                 RESULT_VARIABLE rc)
-        if(NOT "${rc}" STREQUAL "0")
+        if (NOT "${rc}" STREQUAL "0")
             message(FATAL_ERROR "Building ${_DEP_NAME} - FAIL")
-        endif()
+        endif ()
         message(STATUS "Building ${_DEP_NAME} - done")
 
         # install
@@ -108,23 +112,24 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHE
                 install
                 WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/src
                 RESULT_VARIABLE rc)
-        if(NOT "${rc}" STREQUAL "0")
+        if (NOT "${rc}" STREQUAL "0")
             message(FATAL_ERROR "Installing ${_DEP_NAME} - FAIL")
-        endif()
+        endif ()
         message(STATUS "Installing ${_DEP_NAME} - done")
     endif ()
 endif ()
 
+SetDepPath()
 AppendCMakePrefix()
 set(BOOST_ROOT ${_DEP_PREFIX})
 set(Boost_NO_SYSTEM_PATHS ON)
 
 find_package(Boost 1.76 COMPONENTS ALL)
 # see https://stackoverflow.com/questions/6646405/how-do-you-add-boost-libraries-in-cmakelists-txt
-if(${Boost_FOUND})
+if (${Boost_FOUND})
     message(STATUS "Boost Boost_INCLUDE_DIRS=${Boost_INCLUDE_DIRS}, Boost_LIBRARIES=${Boost_LIBRARIES}")
     include_directories(${Boost_INCLUDE_DIRS})
-endif()
+endif ()
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)

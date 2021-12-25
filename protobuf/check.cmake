@@ -7,7 +7,11 @@ set(_NEED_REBUILD TRUE)
 set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
 set(_DEP_VER 3.9.1)
-set(_DEP_URL https://github.com/google/${_DEP_NAME}/releases/download/v${_DEP_VER}/${_DEP_NAME}-all-${_DEP_VER}.tar.gz)
+if (DEFINED ENV{OSS_URL})
+    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-all-${_DEP_VER}.tar.gz)
+else ()
+    set(_DEP_URL https://github.com/google/${_DEP_NAME}/releases/download/v${_DEP_VER}/${_DEP_NAME}-all-${_DEP_VER}.tar.gz)
+endif ()
 
 SetDepPrefix()
 CheckVersion()
@@ -26,14 +30,16 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHE
 endif ()
 
 SetDepPath()
-message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "
-        "${_DEP_UNAME}_INCLUDE_DIR=${${_DEP_UNAME}_INCLUDE_DIR}")
-
-message(STATUS "${_DEP_NAME} LIB_DIR: ${_DEP_LIB_DIR}")
-
 AppendCMakePrefix()
+
+set(Protobuf_INCLUDE_DIR ${_DEP_PREFIX}/include)
 set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Protobuf REQUIRED)
+if (NOT DEFINED Protobuf_FOUND)
+    message(FATAL_ERROR "Missing protobuf")
+else ()
+    message(STATUS "found protobuf")
+endif ()
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)

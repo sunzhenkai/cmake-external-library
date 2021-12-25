@@ -2,7 +2,11 @@ get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
 string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
 
 set(_DEP_VER 19.05)
-set(_DEP_URL https://codeload.github.com/sunzhenkai/dpdk/tar.gz/refs/tags/${_DEP_VER})
+if (DEFINED ENV{OSS_URL})
+    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-${_DEP_VER}.tar.gz)
+else ()
+    set(_DEP_URL https://codeload.github.com/sunzhenkai/dpdk/tar.gz/refs/tags/${_DEP_VER})
+endif ()
 
 # template variables
 set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})

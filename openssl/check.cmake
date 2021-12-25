@@ -7,7 +7,11 @@ set(_NEED_REBUILD TRUE)
 set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
 set(_DEP_VER 1_0_2o)
-set(_DEP_URL https://github.com/${_DEP_NAME}/${_DEP_NAME}/archive/OpenSSL_${_DEP_VER}.tar.gz)
+if (DEFINED ENV{OSS_URL})
+    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-OpenSSL_${_DEP_VER}.tar.gz)
+else ()
+    set(_DEP_URL https://github.com/${_DEP_NAME}/${_DEP_NAME}/archive/OpenSSL_${_DEP_VER}.tar.gz)
+endif ()
 
 SetDepPrefix()
 CheckVersion()

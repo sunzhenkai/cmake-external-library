@@ -2,11 +2,11 @@ get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
 string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
 
 #set(_DEP_VER 6.2.1)
-set(_DEP_VER 5.3.0)
+set(_DEP_VER 2.2.2)
 if (DEFINED ENV{OSS_URL})
     set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-${_DEP_VER}.tar.gz)
 else ()
-    set(_DEP_URL https://github.com/fmtlib/fmt/archive/${_DEP_VER}.tar.gz)
+    set(_DEP_URL https://codeload.github.com/${_DEP_NAME}/${_DEP_NAME}/tar.gz/refs/tags/v${_DEP_VER})
 endif ()
 
 # template variables
@@ -21,6 +21,9 @@ message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DE
 if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a))
     DownloadDep()
     ExtractDep()
+    set(_EXTRA_DEFINE
+            -DBUILD_SHARED_LIBS=ON
+            -DBUILD_STATIC_LIBS=ON)
     CMakeNinja()
     NinjaBuild()
     NinjaInstall()
@@ -28,10 +31,8 @@ endif ()
 
 SetDepPath()
 AppendCMakePrefix()
-message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "
-        "${_DEP_UNAME}_INCLUDE_DIR=${${_DEP_UNAME}_INCLUDE_DIR}, CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
 
-find_package(fmt REQUIRED CONFIG)
+find_library(gflags REQUIRED)
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)

@@ -8,7 +8,11 @@ set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
 set(_DEP_VER 8.6.0)
 string(REPLACE "." "_" _DEP_VER_ "${_DEP_VER}")
-set(_DEP_URL https://codeload.github.com/weidai11/${_DEP_NAME}/tar.gz/refs/tags/${_DEP_UNAME}_${_DEP_VER_})
+if (DEFINED ENV{OSS_URL})
+    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-${_DEP_UNAME}_${_DEP_VER_}.tar.gz)
+else ()
+    set(_DEP_URL https://codeload.github.com/weidai11/${_DEP_NAME}/tar.gz/refs/tags/${_DEP_UNAME}_${_DEP_VER_})
+endif ()
 
 SetDepPrefix()
 CheckVersion()
@@ -26,7 +30,7 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHE
     set(_CMAKE_INSTALL_EXTRA_DEFINE
             PREFIX=${_DEP_PREFIX})
     MakeInstall()
-endif()
+endif ()
 
 SetDepPath()
 message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "

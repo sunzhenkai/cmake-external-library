@@ -26,7 +26,6 @@ message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DE
 set(_DEP_NAME_INSTALL_CHECK "lib${_DEP_NAME}.a")
 if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHECK}))
     GitClone()
-    ExtractDep()
     set(_BUILD_TYPE Debug)
     set(_EXTRA_DEFINE -DSeastar_APPS=OFF
             -DSeastar_DEMOS=OFF
@@ -39,8 +38,7 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHE
             -DProtobuf_USE_STATIC_LIBS=ON
             -DBOOST_ROOT=${BOOST_ROOT}
             -DSeastar_COMPRESS_DEBUG=OFF
-            -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -Wno-error
-            )
+            -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -Wno-error)
     CMakeNinja()
     NinjaBuild()
     NinjaInstall()

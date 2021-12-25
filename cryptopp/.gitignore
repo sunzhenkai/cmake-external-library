@@ -1,0 +1,11 @@
+build
+src
+lib
+packages
+share
+bin
+lib64
+include
+doc
+man
+*.swp
