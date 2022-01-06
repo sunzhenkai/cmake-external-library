@@ -1,4 +1,4 @@
-PROJECT(external)
+PROJECT(cmake-external-library)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -21,7 +21,7 @@ set(LIBRARIES
         leveldb
         libevent
         thrift
-        brpc
+#        brpc
         )
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)
