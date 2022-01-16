@@ -34,6 +34,7 @@ AppendCMakePrefix()
 
 set(Protobuf_INCLUDE_DIR ${_DEP_PREFIX}/include)
 set(Protobuf_USE_STATIC_LIBS ON)
+
 find_package(Protobuf REQUIRED)
 if (NOT DEFINED Protobuf_FOUND)
     message(FATAL_ERROR "Missing protobuf, Protobuf_INCLUDE_DIR=${Protobuf_INCLUDE_DIR}")

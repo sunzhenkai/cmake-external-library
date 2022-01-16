@@ -24,6 +24,7 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a))
     set(_EXTRA_DEFINE -DEVENT__LIBRARY_TYPE=STATIC)
     CMakeNinja()
     NinjaBuild()
+    NinjaInstall()
 endif ()
 
 SetDepPath()

@@ -13,7 +13,6 @@ else ()
     set(_DEP_URL https://codeload.github.com/google/${_DEP_NAME}/tar.gz/refs/tags/v${_DEP_VER})
 endif ()
 
-
 SetDepPrefix()
 CheckVersion()
 message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DEP_PREFIX}, "

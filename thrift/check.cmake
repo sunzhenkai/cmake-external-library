@@ -19,9 +19,6 @@ else ()
     set(_DEP_URL https://codeload.github.com/apache/${_DEP_NAME}/tar.gz/refs/tags/v${_DEP_VER})
 endif ()
 
-message(STATUS "${THRIFT_FOUND} - ${Thrift} - ${thrift} - ${THRIFT_INCLUDE_DIR}")
-
-
 SetDepPrefix()
 CheckVersion()
 message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DEP_PREFIX}, "
@@ -32,7 +29,7 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a))
     ExtractDep()
     message(STATUS "Build thrift with LIBEVENT_PREFIX=${LIBEVENT_PREFIX}, OPENSSL_PREFIX=${OPENSSL_PREFIX}, "
             "BOOST_PREFIX=${BOOST_PREFIX}")
-    # if you configure with --with-cpp, but it does not pass the check, that won't trigger exception. It's weird.
+    # if you configure with --with-cpp, but don't pass the defines, that won't trigger exception. It's weird.
     set(_EXTRA_DEFINE
             --without-python
             --without-py3
@@ -41,6 +38,8 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a))
             --with-openssl=${OPENSSL_PREFIX}
             --with-boost=${BOOST_PREFIX}
             --enable-shared=no
+            --enable-tests=no
+            --enable-tutorial=no
             )
     Bootstrap()
     Configure()
@@ -51,11 +50,11 @@ endif ()
 SetDepPath()
 AppendCMakePrefix()
 
-set(_FIND_STATIC_LIBRARY_EXTRA
-        "INTERFACE_COMPILE_DEFINITIONS \"FORCE_BOOST_SMART_PTR;FORCE_BOOST_FUNCTIONAL\"")
-FindStaticLibrary()
-set(_DEP_NAME_SPACE thriftz)
-FindStaticLibrary()
+#set(_FIND_STATIC_LIBRARY_EXTRA
+#        "INTERFACE_COMPILE_DEFINITIONS \"FORCE_BOOST_SMART_PTR;FORCE_BOOST_FUNCTIONAL\"")
+#FindStaticLibrary()
+#set(_DEP_NAME_SPACE thriftz)
+#FindStaticLibrary()
 
 #find_path(THRIFT_INCLUDE_DIR
 #        thrift/Thrift.h
@@ -78,46 +77,49 @@ FindStaticLibrary()
 #        thrift
 #)
 
-if (NOT TARGET Thrift AND EXISTS ${_DEP_LIB_DIR}/libthrift.a)
-    message(STATUS "Add library thrift")
-    add_library(Thrift STATIC IMPORTED)
-    set_target_properties(Thrift PROPERTIES
-            IMPORTED_LOCATION "${_DEP_LIB_DIR}/libthrift.a"
-            INTERFACE_COMPILE_DEFINITIONS "FORCE_BOOST_SMART_PTR;FORCE_BOOST_FUNCTIONAL"
-            INTERFACE_INCLUDE_DIRECTORIES "${_DEP_INCLUDE_DIR}")
-endif ()
+#if (NOT TARGET Thrift AND EXISTS ${_DEP_LIB_DIR}/libthrift.a)
+#    message(STATUS "Add library thrift")
+#    add_library(Thrift STATIC IMPORTED)
+#    set_target_properties(Thrift PROPERTIES
+#            IMPORTED_LOCATION "${_DEP_LIB_DIR}/libthrift.a"
+#            INTERFACE_COMPILE_DEFINITIONS "FORCE_BOOST_SMART_PTR;FORCE_BOOST_FUNCTIONAL"
+#            INTERFACE_INCLUDE_DIRECTORIES "${_DEP_INCLUDE_DIR}")
+#endif ()
+#
+#find_path(THRIFT_INCLUDE_DIR
+#        NAMES thrift/Thrift.h
+#        HINTS ${_DEP_PREFIX}
+#        PATH_SUFFIXES include
+#        )
+#
+#find_library(THRIFT_LIBRARIES
+#        NAMES thrift libthrift
+#        HINTS ${_DEP_PREFIX}
+#        PATH_SUFFIXES lib lib64
+#        )
+#
+#find_program(THRIFT_COMPILER
+#        NAMES thrift
+#        HINTS ${_DEP_PREFIX}
+#        PATH_SUFFIXES bin bin64
+#        )
+#
+#if (THRIFT_COMPILER)
+#    exec_program(${THRIFT_COMPILER}
+#            ARGS -version OUTPUT_VARIABLE __thrift_OUT RETURN_VALUE THRIFT_RETURN)
+#    string(REGEX MATCH "[0-9]+.[0-9]+.[0-9]+-[a-z]+$" THRIFT_VERSION_STRING ${__thrift_OUT})
+#endif ()
+#set(THRIFT_VERSION_STRING ${_DEP_VER})
+#include(FindPackageHandleStandardArgs)
+#FIND_PACKAGE_HANDLE_STANDARD_ARGS(THRIFT DEFAULT_MSG THRIFT_LIBRARIES THRIFT_INCLUDE_DIR THRIFT_COMPILER)
+#mark_as_advanced(THRIFT_LIBRARIES THRIFT_INCLUDE_DIR THRIFT_COMPILER THRIFT_VERSION_STRING)
+#set(THRIFT_FILES ${THRIFT})
 
-find_path(THRIFT_INCLUDE_DIR
-        NAMES thrift/Thrift.h
-        HINTS ${_DEP_PREFIX}
-        PATH_SUFFIXES include
-        )
-
-find_library(THRIFT_LIBRARIES
-        NAMES thrift libthrift
-        HINTS ${_DEP_PREFIX}
-        PATH_SUFFIXES lib lib64
-        )
-
-find_program(THRIFT_COMPILER
-        NAMES thrift
-        HINTS ${_DEP_PREFIX}
-        PATH_SUFFIXES bin bin64
-        )
-
-if (THRIFT_COMPILER)
-    exec_program(${THRIFT_COMPILER}
-            ARGS -version OUTPUT_VARIABLE __thrift_OUT RETURN_VALUE THRIFT_RETURN)
-    string(REGEX MATCH "[0-9]+.[0-9]+.[0-9]+-[a-z]+$" THRIFT_VERSION_STRING ${__thrift_OUT})
-endif ()
-set(THRIFT_VERSION_STRING ${_DEP_VER})
-include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(THRIFT DEFAULT_MSG THRIFT_LIBRARIES THRIFT_INCLUDE_DIR THRIFT_COMPILER)
-mark_as_advanced(THRIFT_LIBRARIES THRIFT_INCLUDE_DIR THRIFT_COMPILER THRIFT_VERSION_STRING)
-
-find_library(Thrift NO_DEFAULT_PATH)
-set(THRIFT_FILES ${THRIFT})
-message(STATUS "${THRIFT_FILES} - ${_DEP_INCLUDE_DIR} - ${THRIFT_VERSION_STRING} - ${Thrift} - ${thrift} - ${THRIFT_INCLUDE_DIR}")
+find_library(thrift thrift REQUIRED CONFIG)
+find_library(thriftz thriftz REQUIRED CONFIG)
+find_library(thriftnb thriftnb REQUIRED CONFIG)
+message(STATUS "check thrift. [thrift=${thrift}, thriftz=${thriftz}, thriftnb=${thriftnb}, "
+        "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}]")
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)
