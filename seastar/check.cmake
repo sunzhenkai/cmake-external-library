@@ -38,7 +38,7 @@ if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHE
             -DProtobuf_USE_STATIC_LIBS=ON
             -DBOOST_ROOT=${BOOST_ROOT}
             -DSeastar_COMPRESS_DEBUG=OFF
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -Wno-error)
     CMakeNinja()
     NinjaBuild()
