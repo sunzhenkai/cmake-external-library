@@ -21,8 +21,8 @@ set(LIBRARIES
         leveldb
         libevent
         thrift
-#        brpc
         flatbuffers
+        brpc
         )
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)

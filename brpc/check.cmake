@@ -11,11 +11,13 @@ set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(_NEED_REBUILD TRUE)
 set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
-set(_DEP_VER 1.0.0)
+#set(_DEP_VER 1.0.0)
+set(_DEP_VER s.1.0.0)
 if (DEFINED ENV{OSS_URL})
     set(_DEP_URL $ENV{OSS_URL}/incubator-${_DEP_NAME}-${_DEP_VER}.tar.gz)
 else ()
-    set(_DEP_URL https://codeload.github.com/apache/incubator-brpc/tar.gz/refs/tags/${_DEP_VER})
+    set(_DEP_URL https://codeload.github.com/sunzhenkai/incubator-brpc/tar.gz/refs/tags/${_DEP_VER})
+#    set(_DEP_URL https://codeload.github.com/apache/incubator-brpc/tar.gz/refs/tags/${_DEP_VER})
 endif ()
 
 SetDepPrefix()
@@ -23,19 +25,18 @@ CheckVersion()
 message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DEP_PREFIX}, "
         "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
 
-set(_DEP_NAME_INSTALL_CHECK "libbrpc.a")
-if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHECK}))
+if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a))
     DownloadDep()
     ExtractDep()
-    set(_EXTRA_DEFINE -DWITH_THRIFT=ON -DTHRIFT_LIBRARIES=${THRIFT_LIBRARIES} -DTHRIFT_INCLUDE_DIR=${THRIFT_INCLUDE_DIR})
+    set(_EXTRA_DEFINE -DWITH_THRIFT=ON -DWITH_BOOST=ON -DTHRIFT_INCLUDE_DIR=${THRIFT_INCLUDE_DIR})
     CMakeNinja()
     NinjaBuild()
     NinjaInstall()
-#    execute_process(
-#            COMMAND bash config_brpc.sh --headers="${THRIFT_PREFIX}/include ${GFLAGS_PREFIX}/include ${LEVELDB_PREFIX}/include" --libs="${THRIFT_PREFIX}/lib ${GFLAGS_PREFIX}/lib ${LEVELDB_PREFIX}/lib"
-#            WORKING_DIRECTORY "${_DEP_CUR_DIR}/src"
-#            RESULT_VARIABLE rc)
-#    MakeBuild()
+    #    execute_process(
+    #            COMMAND bash config_brpc.sh --headers="${THRIFT_PREFIX}/include ${GFLAGS_PREFIX}/include ${LEVELDB_PREFIX}/include" --libs="${THRIFT_PREFIX}/lib ${GFLAGS_PREFIX}/lib ${LEVELDB_PREFIX}/lib"
+    #            WORKING_DIRECTORY "${_DEP_CUR_DIR}/src"
+    #            RESULT_VARIABLE rc)
+    #    MakeBuild()
 endif ()
 
 SetDepPath()

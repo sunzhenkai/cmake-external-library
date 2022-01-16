@@ -11,8 +11,9 @@ set(_NEED_REBUILD TRUE)
 set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
 #set(_DEP_VER 0.14.2)
+set(_DEP_VER 0.11.0)
 #set(_DEP_VER 0.9.3.1)
-set(_DEP_VER 0.15.0)
+#set(_DEP_VER 0.15.0)
 if (DEFINED ENV{OSS_URL})
     set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-${_DEP_VER}.tar.gz)
 else ()
@@ -85,7 +86,7 @@ AppendCMakePrefix()
 #            INTERFACE_COMPILE_DEFINITIONS "FORCE_BOOST_SMART_PTR;FORCE_BOOST_FUNCTIONAL"
 #            INTERFACE_INCLUDE_DIRECTORIES "${_DEP_INCLUDE_DIR}")
 #endif ()
-#
+
 #find_path(THRIFT_INCLUDE_DIR
 #        NAMES thrift/Thrift.h
 #        HINTS ${_DEP_PREFIX}
@@ -115,11 +116,14 @@ AppendCMakePrefix()
 #mark_as_advanced(THRIFT_LIBRARIES THRIFT_INCLUDE_DIR THRIFT_COMPILER THRIFT_VERSION_STRING)
 #set(THRIFT_FILES ${THRIFT})
 
-find_library(thrift thrift REQUIRED CONFIG)
+find_library(thrift REQUIRED CONFIG)
 find_library(thriftz thriftz REQUIRED CONFIG)
 find_library(thriftnb thriftnb REQUIRED CONFIG)
+set(THRIFT_LIB thrift)
+set(THRIFTNB_LIB thriftnb)
 message(STATUS "check thrift. [thrift=${thrift}, thriftz=${thriftz}, thriftnb=${thriftnb}, "
-        "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}]")
+        "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}, thrift_INCLUDE_DIR=${thrift_INCLUDE_DIR}, "
+        "THRIFT_INCLUDE_DIR=${THRIFT_INCLUDE_DIR}]")
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)
