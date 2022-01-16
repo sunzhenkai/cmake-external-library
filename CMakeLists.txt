@@ -22,6 +22,7 @@ set(LIBRARIES
         libevent
         thrift
 #        brpc
+        flatbuffers
         )
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)

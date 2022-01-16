@@ -19,7 +19,7 @@ else ()
     set(_DEP_URL https://codeload.github.com/apache/${_DEP_NAME}/tar.gz/refs/tags/v${_DEP_VER})
 endif ()
 
-message(STATUS "ckpt;adsds ${THRIFT_FOUND} - ${Thrift} - ${thrift} - ${THRIFT_INCLUDE_DIR}")
+message(STATUS "${THRIFT_FOUND} - ${Thrift} - ${thrift} - ${THRIFT_INCLUDE_DIR}")
 
 
 SetDepPrefix()
@@ -117,7 +117,7 @@ mark_as_advanced(THRIFT_LIBRARIES THRIFT_INCLUDE_DIR THRIFT_COMPILER THRIFT_VERS
 
 find_library(Thrift NO_DEFAULT_PATH)
 set(THRIFT_FILES ${THRIFT})
-message(STATUS "ckpt;adsd - ${THRIFT_FILES} - ${_DEP_INCLUDE_DIR} - ${THRIFT_VERSION_STRING} - ${Thrift} - ${thrift} - ${THRIFT_INCLUDE_DIR}")
+message(STATUS "${THRIFT_FILES} - ${_DEP_INCLUDE_DIR} - ${THRIFT_VERSION_STRING} - ${Thrift} - ${thrift} - ${THRIFT_INCLUDE_DIR}")
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)

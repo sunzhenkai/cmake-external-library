@@ -154,7 +154,7 @@ function(FindStaticLibrary)
                 ${_FIND_STATIC_LIBRARY_EXTRA}
                 INTERFACE_INCLUDE_DIRECTORIES "${_DEP_INCLUDE_DIR}")
     endif ()
-    message(STATUS "ckpt;;;;sad ${${_FINAL_FIND_DEP_NAME}} ${_DEP_LIB_DIR}/lib${_DEP_NAME_SPACE}.a")
+    message(STATUS "${${_FINAL_FIND_DEP_NAME}} ${_DEP_LIB_DIR}/lib${_DEP_NAME_SPACE}.a")
 endfunction()
 
 function(DownloadDep)
