@@ -1,6 +1,12 @@
 PROJECT(cmake-external-library)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 
+IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE RelWithDebInfo
+            CACHE STRING "Choose the type of build : None Debug Release RelWithDebInfo Asan Pprof."
+            FORCE)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+
 SET( CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING
         "Choose the type of build, options are: None Debug Release RelWithDebInfo Asan Pprof."
         FORCE )
