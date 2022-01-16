@@ -21,11 +21,11 @@ MARK_AS_ADVANCED(
         CMAKE_C_FLAGS_ASAN
         CMAKE_EXE_LINKER_FLAGS_ASAN )
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-SET(CMAKE_CXX_FLAGS "-fPIC -w -g -pthread -std=gnu++17 -fno-omit-frame-pointer")
-SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS})
-SET(CMAKE_CXX_FLAGS_RELEASE "-fPIC -w -g -pthread -O2 -std=gnu++17 -fno-omit-frame-pointer")
+#set(CMAKE_CXX_STANDARD 17)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#SET(CMAKE_CXX_FLAGS "-fPIC -w -g -pthread -std=gnu++17 -fno-omit-frame-pointer")
+#SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS})
+#SET(CMAKE_CXX_FLAGS_RELEASE "-fPIC -w -g -pthread -O2 -std=gnu++17 -fno-omit-frame-pointer")
 
 include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 set(CHECK_FILE "check.cmake")
