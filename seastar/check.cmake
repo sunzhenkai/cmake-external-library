@@ -26,6 +26,11 @@ message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DE
 set(_DEP_NAME_INSTALL_CHECK "lib${_DEP_NAME}.a")
 if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHECK}))
     GitClone()
+    execute_process(
+            COMMAND env
+            sudo ./install-dependencies.sh
+            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+            RESULT_VARIABLE rc)
     set(_BUILD_TYPE Debug)
     set(_EXTRA_DEFINE -DSeastar_APPS=OFF
             -DSeastar_DEMOS=OFF

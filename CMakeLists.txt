@@ -42,6 +42,9 @@ set(LIBRARIES
         yaml-cpp
         openssl
         cryptopp
+        c-ares
+        lz4
+#        valgrind
         seastar
         gflags
         leveldb

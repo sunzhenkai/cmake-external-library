@@ -6,12 +6,11 @@ set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(_NEED_REBUILD TRUE)
 set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
-set(_DEP_VER 1.18.1)
-string(REPLACE "." "_" _DEP_VER_ "${_DEP_VER}")
+set(_DEP_VER 3.18.1)
 if (DEFINED ENV{OSS_URL})
-    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-cares-${_DEP_VER_}.tar.gz)
+    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-${_DEP_VER}.tar.bz2)
 else ()
-    set(_DEP_URL https://codeload.github.com/${_DEP_NAME}/${_DEP_NAME}/tar.gz/refs/tags/cares-${_DEP_VER_})
+    set(_DEP_URL https://sourceware.org/pub/${_DEP_NAME}/${_DEP_NAME}-${_DEP_VER}.tar.bz2)
 endif ()
 
 SetDepPrefix()
@@ -19,17 +18,10 @@ CheckVersion()
 message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DEP_PREFIX}, "
         "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
 
-
-set(_DEP_NAME_INSTALL_CHECK "libcares.a")
+set(_DEP_NAME_INSTALL_CHECK "valgrind/libcoregrind-amd64-linux.a")
 if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHECK}))
     DownloadDep()
     ExtractDep()
-    execute_process(
-            COMMAND env
-            ./buildconf
-            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
-            RESULT_VARIABLE rc)
-    set(_EXTRA_DEFINE --enable-shared=no --enable-static=yes)
     Configure()
     MakeBuild()
     MakeInstall()
@@ -40,8 +32,24 @@ message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "
         "${_DEP_UNAME}_INCLUDE_DIR=${${_DEP_UNAME}_INCLUDE_DIR}")
 AppendCMakePrefix()
 
-set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${_DEP_PREFIX}/lib/pkgconfig/")
-set(CARES_PKG_CONFIG_PATH ${_DEP_PREFIX}/lib/pkgconfig/)
+find_path(VALGRIND_INCLUDE_DIR valgrind.h)
+find_library(VALGRIND_LIBRARIES valgrind)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Valgrind
+        DEFAULT_MSG
+        VALGRIND_LIBRARIES
+        VALGRIND_INCLUDE_DIR)
+
+mark_as_advanced(VALGRIND_INCLUDE_DIR
+        VALGRIND_LIBRARIES)
+
+message(STATUS "VALGRIND_INCLUDE_DIR=${VALGRIND_INCLUDE_DIR} VALGRIND_LIBRARIES=${VALGRIND_LIBRARIES}")
+if (VALGRIND_FOUND)
+    message(STATUS "found valgrind. VALGRIND_FOUND=${VALGRIND_FOUND}")
+else ()
+    message(FATAL_ERROR "valgrind not found")
+endif ()
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)
@@ -55,5 +63,3 @@ unset(_DEP_INCLUDE_DIR)
 unset(_DEP_NAME_SPACE)
 unset(_DEP_NAME_INSTALL_CHECK)
 unset(_EXTRA_DEFINE)
-unset(_CMAKE_BUILD_EXTRA_DEFINE)
-unset(_CMAKE_INSTALL_EXTRA_DEFINE)

@@ -289,7 +289,10 @@ function(NinjaBuild)
         set(_DEP_NAME_BUILD_CHECK lib${_DEP_NAME}.a)
     endif ()
 
-    if (NOT EXISTS ${_DEP_CUR_DIR}/build/lib/${_DEP_NAME_BUILD_CHECK})
+    set(_DEP_LIB_DIR_ ${_DEP_CUR_DIR}/build/lib/${_DEP_NAME_BUILD_CHECK})
+    set(_DEP_LIB64_DIR_ ${_DEP_CUR_DIR}/build/lib64/${_DEP_NAME_BUILD_CHECK})
+
+    if ((NOT EXISTS _DEP_LIB_DIR_) AND (NOT EXISTS _DEP_LIB64_DIR_))
         message(STATUS "Building ${_DEP_NAME}")
         execute_process(
                 COMMAND ninja

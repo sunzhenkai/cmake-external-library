@@ -6,12 +6,11 @@ set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(_NEED_REBUILD TRUE)
 set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
-set(_DEP_VER 1.18.1)
-string(REPLACE "." "_" _DEP_VER_ "${_DEP_VER}")
+set(_DEP_VER 1.9.3)
 if (DEFINED ENV{OSS_URL})
-    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-cares-${_DEP_VER_}.tar.gz)
+    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-${_DEP_VER}.tar.gz)
 else ()
-    set(_DEP_URL https://codeload.github.com/${_DEP_NAME}/${_DEP_NAME}/tar.gz/refs/tags/cares-${_DEP_VER_})
+    set(_DEP_URL https://codeload.github.com/${_DEP_NAME}/${_DEP_NAME}/tar.gz/refs/tags/${_DEP_NAME}-${_DEP_VER})
 endif ()
 
 SetDepPrefix()
@@ -20,18 +19,15 @@ message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DE
         "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
 
 
-set(_DEP_NAME_INSTALL_CHECK "libcares.a")
+set(_DEP_NAME_INSTALL_CHECK "liblz4.a")
 if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHECK}))
     DownloadDep()
     ExtractDep()
-    execute_process(
-            COMMAND env
-            ./buildconf
-            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
-            RESULT_VARIABLE rc)
-    set(_EXTRA_DEFINE --enable-shared=no --enable-static=yes)
-    Configure()
+    set(_CMAKE_BUILD_EXTRA_DEFINE
+            PREFIX=${_DEP_PREFIX})
     MakeBuild()
+    set(_CMAKE_INSTALL_EXTRA_DEFINE
+            PREFIX=${_DEP_PREFIX})
     MakeInstall()
 endif ()
 
@@ -41,7 +37,7 @@ message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "
 AppendCMakePrefix()
 
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${_DEP_PREFIX}/lib/pkgconfig/")
-set(CARES_PKG_CONFIG_PATH ${_DEP_PREFIX}/lib/pkgconfig/)
+set(LZ4_PKG_CONFIG_PATH ${_DEP_PREFIX}/lib/pkgconfig/)
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)

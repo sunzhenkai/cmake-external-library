@@ -18,7 +18,7 @@ SetDepPrefix()
 CheckVersion()
 message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DEP_PREFIX}")
 
-if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a))
+if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib64/lib${_DEP_NAME}.a))
     DownloadDep()
     ExtractDep()
     CMakeNinja()
