@@ -9,5 +9,5 @@
 
 ## install
 ```shell
-# yum install -y valgrind
+# yum install -y valgrind-devel
 ```
