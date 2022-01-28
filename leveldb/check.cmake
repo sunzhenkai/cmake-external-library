@@ -20,7 +20,8 @@ CheckVersion()
 message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DEP_PREFIX}, "
         "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
 
-if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a))
+ExistsLib()
+if ((${_NEED_REBUILD}) OR (${_LIB_DOES_NOT_EXISTS}))
     if (DEFINED ENV{OSS_URL})
         set(_DEP_VER 1.23)
         set(_DEP_URL $ENV{OSS_URL}/submodule-${_DEP_NAME}-${_DEP_VER}.tar.gz)

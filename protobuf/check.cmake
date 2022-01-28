@@ -33,7 +33,6 @@ endif ()
 SetDepPath()
 AppendCMakePrefix()
 
-
 if (NOT DEFINED Protobuf_FOUND)
     set(Protobuf_INCLUDE_DIR ${_DEP_PREFIX}/include)
     set(Protobuf_USE_STATIC_LIBS ON)

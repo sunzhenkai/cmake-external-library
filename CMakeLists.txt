@@ -53,6 +53,7 @@ set(LIBRARIES
         flatbuffers
         snappy
         brpc
+        curl
         )
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)

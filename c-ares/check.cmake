@@ -24,11 +24,7 @@ set(_DEP_NAME_INSTALL_CHECK "libcares.a")
 if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHECK}))
     DownloadDep()
     ExtractDep()
-    execute_process(
-            COMMAND env
-            ./buildconf
-            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
-            RESULT_VARIABLE rc)
+    BuildConf()
     set(_EXTRA_DEFINE --enable-shared=no --enable-static=yes)
     Configure()
     MakeBuild()

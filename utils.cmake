@@ -136,11 +136,22 @@ function(SetDepPath)
 endfunction()
 
 function(AppendCMakePrefix)
+    set(_VARS _DEP_UNAME _DEP_PREFIX)
+    CheckVars()
+
     list(FIND CMAKE_PREFIX_PATH ${_DEP_PREFIX} _DEP_INDEX)
     if (_DEP_INDEX EQUAL -1)
         list(APPEND CMAKE_PREFIX_PATH ${_DEP_PREFIX})
         set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
     endif ()
+
+    # set pkg config
+    if (EXISTS ${_DEP_PREFIX}/lib/pkgconfig/)
+        set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${_DEP_PREFIX}/lib/pkgconfig/")
+    elseif (EXISTS ${_DEP_PREFIX}/lib64/pkgconfig/)
+        set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${_DEP_PREFIX}/lib/pkgconfig/")
+    endif ()
+    set(${_DEP_UNAME}_PKG_CONFIG_PATH ${_DEP_PREFIX}/lib/pkgconfig/)
 endfunction()
 
 function(FindStaticLibrary)
@@ -348,7 +359,7 @@ function(NinjaInstall)
 
     ExistsLib()
     if (${_LIB_DOES_NOT_EXISTS})
-#    if (NOT EXISTS ${_DEP_CUR_DIR}/lib/${_DEP_NAME_INSTALL_CHECK})
+        #    if (NOT EXISTS ${_DEP_CUR_DIR}/lib/${_DEP_NAME_INSTALL_CHECK})
         message(STATUS "Installing ${_DEP_NAME}")
         execute_process(
                 COMMAND ${_PERMISSION_ROLE} ninja install
@@ -383,6 +394,40 @@ function(Autogen)
         endif ()
         message(STATUS "Autogen ${_DEP_NAME} - done")
         file(WRITE ${_DEP_CUR_DIR}/src/PHASE_AUTOGEN "done")
+    endif ()
+endfunction()
+
+function(BuildConf)
+    set(_VARS _DEP_CUR_DIR)
+    CheckVars()
+
+    execute_process(
+            COMMAND env
+            ./buildconf
+            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+            RESULT_VARIABLE rc)
+
+    if (NOT "${rc}" STREQUAL "0")
+        message(FATAL_ERROR "Build config ${_DEP_NAME} - FAIL")
+    else ()
+        message(STATUS "Build config ${_DEP_NAME} - done")
+    endif ()
+endfunction()
+
+function(AutoReconf)
+    set(_VARS _DEP_CUR_DIR)
+    CheckVars()
+
+    execute_process(
+            COMMAND env
+            autoreconf -fi
+            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+            RESULT_VARIABLE rc)
+
+    if (NOT "${rc}" STREQUAL "0")
+        message(FATAL_ERROR "Auto reconf ${_DEP_NAME} - FAIL")
+    else ()
+        message(STATUS "Auto reconf ${_DEP_NAME} - done")
     endif ()
 endfunction()
 
@@ -471,7 +516,7 @@ function(MakeBuild)
                 WORKING_DIRECTORY ${_WORK_DIR}
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
-            message(FATAL_ERROR "Building ${_DEP_NAME} - FAIL")
+            message(FATAL_ERROR "Building ${_DEP_NAME} - FAIL _WORK_DIR=${_WORK_DIR}")
         endif ()
         message(STATUS "Building ${_DEP_NAME} - done")
     endif ()
@@ -484,10 +529,8 @@ function(MakeInstall)
     set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/build)
     IsEmpty()
     if (_DIR_TO_CHECK_SIZE EQUAL 0)
-        set(_CHECK_LIB_FIFE ${_DEP_CUR_DIR}/src/src/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
         set(_WORK_DIR ${_DEP_CUR_DIR}/src)
     else ()
-        set(_CHECK_LIB_FIFE ${_DEP_CUR_DIR}/build/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
         set(_WORK_DIR ${_DEP_CUR_DIR}/build)
     endif ()
 
