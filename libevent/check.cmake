@@ -31,7 +31,8 @@ endif ()
 SetDepPath()
 AppendCMakePrefix()
 
-find_library(libevent REQUIRED)
+message(STATUS "Find libevent. [CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}]")
+find_library(libevent event REQUIRED)
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)

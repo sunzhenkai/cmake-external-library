@@ -32,7 +32,8 @@ endif ()
 SetDepPath()
 AppendCMakePrefix()
 
-find_library(gflags REQUIRED)
+message(STATUS "Find gflags. [CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}]")
+find_library(gflags gflags REQUIRED)
 
 unset(_DEP_NAME)
 unset(_DEP_UNAME)

@@ -88,6 +88,25 @@ function(IsEmpty)
     message(STATUS "Empty check, _DIR_TO_CHECK=${_DIR_TO_CHECK}, _DIR_TO_CHECK_SIZE=${_DIR_TO_CHECK_SIZE}")
 endfunction()
 
+function(ExistsLib)
+    set(_VARS _DEP_PREFIX _DEP_NAME)
+    CheckVars()
+
+    if (NOT DEFINED _DEP_NAME_INSTALL_CHECK)
+        set(_DEP_NAME_INSTALL_CHECK lib${_DEP_NAME}.a)
+    endif ()
+
+    set(_T_LIB_FILE "${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHECK}")
+    set(_T_LIB64_FILE "${_DEP_PREFIX}/lib64/${_DEP_NAME_INSTALL_CHECK}")
+    if ((EXISTS ${_T_LIB_FILE}) OR (EXISTS ${_T_LIB64_FILE}))
+        set(_LIB_DOES_EXISTS TRUE PARENT_SCOPE)
+        set(_LIB_DOES_NOT_EXISTS FALSE PARENT_SCOPE)
+    else ()
+        set(_LIB_DOES_EXISTS FALSE PARENT_SCOPE)
+        set(_LIB_DOES_NOT_EXISTS TRUE PARENT_SCOPE)
+    endif ()
+endfunction()
+
 function(SetDepPath)
     set(_VARS _DEP_UNAME _DEP_PREFIX)
     CheckVars()
@@ -195,16 +214,18 @@ function(GitClone)
             message(FATAL_ERROR "Cloning ${_DEP_NAME}: ${_DEP_URL} - FAIL")
         endif ()
         message(STATUS "Cloning ${_DEP_NAME}: ${_DEP_URL} - done")
-        message(STATUS "Checking out ${_DEP_NAME}: ${_DEP_VER}")
-        execute_process(
-                COMMAND git checkout ${_DEP_VER}
-                WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
-                RESULT_VARIABLE rc)
-        if (NOT "${rc}" STREQUAL "0")
-            message(FATAL_ERROR "Checking out ${_DEP_NAME}: ${_DEP_VER} - FAIL")
-        endif ()
-        message(STATUS "Checking out ${_DEP_NAME}: ${_DEP_VER} - done")
     endif ()
+
+    # check out commit
+    message(STATUS "Checking out ${_DEP_NAME}: ${_DEP_VER}")
+    execute_process(
+            COMMAND git checkout ${_DEP_VER}
+            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+            RESULT_VARIABLE rc)
+    if (NOT "${rc}" STREQUAL "0")
+        message(FATAL_ERROR "Checking out ${_DEP_NAME}: ${_DEP_VER} - FAIL")
+    endif ()
+    message(STATUS "Checking out ${_DEP_NAME}: ${_DEP_VER} - done")
 endfunction()
 
 function(ExtractDep)
@@ -234,6 +255,12 @@ function(CMakeNinja)
     if (NOT DEFINED _BUILD_TYPE)
         set(_BUILD_TYPE Release)
     endif ()
+
+    if (_PIC_OFF)
+        set(_PIC_FLAG "-DCMAKE_POSITION_INDEPENDENT_CODE=OFF")
+    else ()
+        set(_PIC_FLAG "-DCMAKE_POSITION_INDEPENDENT_CODE=ON")
+    endif ()
     if (NOT EXISTS ${_DEP_CUR_DIR}/build/build.ninja)
         file(MAKE_DIRECTORY ${_DEP_CUR_DIR}/build)
         string(REPLACE ";" "\\;" CMAKE_PREFIX_PATH_STR "${CMAKE_PREFIX_PATH}")
@@ -249,7 +276,7 @@ function(CMakeNinja)
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                 -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
-                -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+                ${_PIC_FLAG}
                 ${_EXTRA_DEFINE}
                 ${_DEP_CUR_DIR}/src
                 WORKING_DIRECTORY ${_DEP_CUR_DIR}/build
@@ -319,7 +346,9 @@ function(NinjaInstall)
         set(_DEP_NAME_INSTALL_CHECK lib${_DEP_NAME}.a)
     endif ()
 
-    if (NOT EXISTS ${_DEP_CUR_DIR}/lib/${_DEP_NAME_INSTALL_CHECK})
+    ExistsLib()
+    if (${_LIB_DOES_NOT_EXISTS})
+#    if (NOT EXISTS ${_DEP_CUR_DIR}/lib/${_DEP_NAME_INSTALL_CHECK})
         message(STATUS "Installing ${_DEP_NAME}")
         execute_process(
                 COMMAND ${_PERMISSION_ROLE} ninja install
@@ -390,6 +419,29 @@ function(Configure)
     endif ()
 endfunction()
 
+function(CMakeBuild)
+    set(_VARS _DEP_PREFIX _DEP_CUR_DIR)
+    CheckVars()
+
+    make_directory(${_DEP_CUR_DIR}/build)
+    execute_process(
+            COMMAND ${CMAKE_COMMAND}
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+            -DCMAKE_BUILD_TYPE=${_BUILD_TYPE}
+            -DCMAKE_INSTALL_PREFIX=${_DEP_PREFIX}
+            -DBUILD_SHARED_LIBS=OFF
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
+            ${_CMAKE_BUILD_EXTRA_DEFINE}
+            ${_DEP_CUR_DIR}/src
+            WORKING_DIRECTORY ${_DEP_CUR_DIR}/build
+            RESULT_VARIABLE rc)
+    if (NOT "${rc}" STREQUAL "0")
+        message(FATAL_ERROR "Cmake build ${_DEP_NAME} - FAIL")
+    endif ()
+endfunction()
+
 function(MakeBuild)
     set(_VARS _DEP_NAME _DEP_CUR_DIR)
     CheckVars()
@@ -397,14 +449,14 @@ function(MakeBuild)
     set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/build)
     IsEmpty()
     if (_DIR_TO_CHECK_SIZE EQUAL 0)
-        set(_CHECK_ILB_FIFE ${_DEP_CUR_DIR}/src/src/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
+        set(_CHECK_LIB_FIFE ${_DEP_CUR_DIR}/src/src/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
         set(_WORK_DIR ${_DEP_CUR_DIR}/src)
     else ()
-        set(_CHECK_ILB_FIFE ${_DEP_CUR_DIR}/build/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
+        set(_CHECK_LIB_FIFE ${_DEP_CUR_DIR}/build/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
         set(_WORK_DIR ${_DEP_CUR_DIR}/build)
     endif ()
 
-    if (NOT EXISTS ${_CHECK_ILB_FIFE})
+    if (NOT EXISTS ${_CHECK_LIB_FIFE})
         message(STATUS "Building ${_DEP_NAME}")
         include(ProcessorCount)
         ProcessorCount(cpus)
@@ -413,8 +465,9 @@ function(MakeBuild)
                 CC=${CMAKE_C_COMPILER}
                 CXX=${CMAKE_CXX_COMPILER}
                 make
+                PREFIX=${_DEP_PREFIX}
                 -j${cpus}
-                ${_CMAKE_BUILD_EXTRA_DEFINE}
+                ${_MAKE_BUILD_EXTRA_DEFINE}
                 WORKING_DIRECTORY ${_WORK_DIR}
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
@@ -428,6 +481,16 @@ function(MakeInstall)
     set(_VARS _DEP_NAME _DEP_CUR_DIR _DEP_PREFIX)
     CheckVars()
 
+    set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/build)
+    IsEmpty()
+    if (_DIR_TO_CHECK_SIZE EQUAL 0)
+        set(_CHECK_LIB_FIFE ${_DEP_CUR_DIR}/src/src/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
+        set(_WORK_DIR ${_DEP_CUR_DIR}/src)
+    else ()
+        set(_CHECK_LIB_FIFE ${_DEP_CUR_DIR}/build/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
+        set(_WORK_DIR ${_DEP_CUR_DIR}/build)
+    endif ()
+
     if (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a)
         message(STATUS "Installing ${_DEP_NAME}")
         execute_process(
@@ -436,8 +499,9 @@ function(MakeInstall)
                 CXX=${CMAKE_CXX_COMPILER}
                 make
                 install
+                PREFIX=${_DEP_PREFIX}
                 ${_CMAKE_INSTALL_EXTRA_DEFINE}
-                WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+                WORKING_DIRECTORY ${_WORK_DIR}
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
             message(FATAL_ERROR "Installing ${_DEP_NAME} - FAIL")

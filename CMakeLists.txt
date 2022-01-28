@@ -51,6 +51,7 @@ set(LIBRARIES
         libevent
         thrift
         flatbuffers
+        snappy
         brpc
         )
 

@@ -1,5 +1,6 @@
 include(${CMAKE_CURRENT_LIST_DIR}/../boost/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../fmt/check.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../c-ares/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../yaml-cpp/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cryptopp/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../protobuf/check.cmake)
@@ -14,7 +15,8 @@ set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 
 #set(_DEP_VER 21.12.19)
 #set(_DEP_URL https://codeload.github.com/sunzhenkai/seastar/tar.gz/refs/tags/${_DEP_VER})
-set(_DEP_VER 5a68003f0385d9dc3d25d50ffb7a9a50cf7c2206)
+set(_DEP_VER 1433623962e6abca03dd23ebd1909f9b1a4fce2a)
+#set(_DEP_VER 5a68003f0385d9dc3d25d50ffb7a9a50cf7c2206)
 set(_DEP_URL https://gitee.com/mirrors/seastar.git)
 #set(_DEP_URL https://github.com/scylladb/seastar.git)
 
@@ -23,8 +25,8 @@ CheckVersion()
 message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DEP_PREFIX}, "
         "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH} CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 
-set(_DEP_NAME_INSTALL_CHECK "lib${_DEP_NAME}.a")
-if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHECK}))
+ExistsLib()
+if ((${_NEED_REBUILD}) OR (${_LIB_DOES_NOT_EXISTS}))
     GitClone()
     execute_process(
             COMMAND env
