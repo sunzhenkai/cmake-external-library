@@ -2,3 +2,4 @@
 cmake-build-*
 **/VERSION
 **/tmp
+**/.DS_Store
