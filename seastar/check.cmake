@@ -45,6 +45,7 @@ if ((${_NEED_REBUILD}) OR (${_LIB_DOES_NOT_EXISTS}))
             WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
             RESULT_VARIABLE rc)
     set(_BUILD_TYPE Debug)
+    set(_PIC_OFF OFF)
     set(_EXTRA_DEFINE -DSeastar_APPS=OFF
             -DSeastar_DEMOS=OFF
             -DSeastar_DOCS=OFF
@@ -84,3 +85,4 @@ unset(_DEP_NAME_SPACE)
 unset(_DEP_NAME_INSTALL_CHECK)
 unset(_EXTRA_DEFINE)
 unset(_BUILD_TYPE)
+unset(_PIC_OFF)
