@@ -54,6 +54,7 @@ set(LIBRARIES
         snappy
         brpc
         curl
+        spdlog
         )
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)
