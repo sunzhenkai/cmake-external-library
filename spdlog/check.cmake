@@ -25,11 +25,8 @@ function(Process)
     SetDepPath()
     AppendCMakePrefix()
     message(STATUS "[${_DEP_NAME}] build done. [_EXTERNAL_VARS=${_EXTERNAL_VARS}]")
-
-    # set external variables
-    foreach (_V IN LISTS _EXTERNAL_VARS)
-        set(${_V} ${${_V}})
-    endforeach ()
+    
+    SetExternalVars()
 endfunction(Process)
 
 Process()
