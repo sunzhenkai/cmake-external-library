@@ -1019,7 +1019,7 @@ endmacro(PrepareDeps)
 
 macro(AddLibrary MODULE)
     set(options NONE)
-    set(oneValueArgs PREFIX)
+    set(oneValueArgs PREFIX LINK_LIBRARIES COMPILE_OPTIONS)
     set(multiValueArgs SUBMODULES)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     message(STATUS "[AddLibrary] MODULE=${MODULE} PREFIX=${ARG_PREFIX} DEP=${ARG_DEP} SUBMODULES=${ARG_SUBMODULES}")
@@ -1036,7 +1036,10 @@ macro(AddLibrary MODULE)
                 IMPORTED_LOCATION "${ARG_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${I}${CMAKE_STATIC_LIBRARY_SUFFIX}"
                 INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
                 INTERFACE_INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
-                )
+                # eg. pthread;z
+                INTERFACE_LINK_LIBRARIES "${ARG_LINK_LIBRARIES}"
+                # eg. -pthread
+                INTERFACE_COMPILE_OPTIONS "${ARG_COMPILE_OPTIONS}")
     endforeach ()
 endmacro(AddLibrary)
 
