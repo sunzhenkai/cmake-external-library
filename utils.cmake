@@ -97,6 +97,7 @@ function(WriteVersion)
     set(_VARS _DEP_PREFIX _DEP_VER)
     CheckVars()
 
+    message(STATUS "Write VERSION file. VERSION=${_DEP_VER} FILE=${_DEP_PREFIX}/VERSION")
     file(WRITE ${_DEP_PREFIX}/VERSION ${_DEP_VER})
 endfunction()
 
