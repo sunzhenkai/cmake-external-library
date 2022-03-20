@@ -1,33 +1,11 @@
 function(Process)
-    # set basic variables
-    get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
-    string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
-    set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
-    set(_DEP_VER 1.9.2)
-    set(_NEED_REBUILD TRUE)
-    set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
-    set(_EXTERNAL_VARS)
-
-    SetDepPrefix()
-    CheckVersionV2()
-    CheckLibExists()
-
-    message(STATUS "[${_DEP_NAME}] set prefix and check version done. "
-            "[_NEED_REBUILD=${_NEED_REBUILD}, _LIB_DOES_NOT_EXISTS=${_LIB_DOES_NOT_EXISTS}]")
-    if ((${_NEED_REBUILD}) OR (${_LIB_DOES_NOT_EXISTS}))
-        DownloadDepV2(gabime)
-        ExtractDep()
-        CMakeNinja()
-        NinjaBuild()
-        NinjaInstall()
-    endif ()
-
-    SetDepPath()
-    AppendCMakePrefix()
-    message(STATUS "[${_DEP_NAME}] build done. [_EXTERNAL_VARS=${_EXTERNAL_VARS}]")
-    
-    SetExternalVars()
+    PrepareDeps(1.9.2 MODULES spdlog)
+    AddProject(
+            DEP_AUTHOR gabime
+            DEP_PROJECT ${_DEP_NAME}
+            DEP_TAG v${_DEP_VER}
+            OSS_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz
+            NINJA)
 endfunction(Process)
-
 Process()
-find_package(spdlog REQUIRED)
+ProcessAddLibrary()

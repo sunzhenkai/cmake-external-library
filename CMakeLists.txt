@@ -44,7 +44,7 @@ set(LIBRARIES
         cryptopp
         c-ares
         lz4
-#        valgrind
+        #        valgrind
         seastar
         gflags
         leveldb
@@ -57,7 +57,12 @@ set(LIBRARIES
         spdlog
         )
 
-set(BUILD_EXTERNAL_LIBRARY TRUE)
+set(BUILD_EXTERNAL_LIBRARY FALSE)
+
+include(${CMAKE_CURRENT_LIST_DIR}/openssl/${CHECK_FILE})
+include(${CMAKE_CURRENT_LIST_DIR}/spdlog/${CHECK_FILE})
+include(${CMAKE_CURRENT_LIST_DIR}/curl/${CHECK_FILE})
+
 
 # disable build library
 set(BUILD_DPDK FALSE)

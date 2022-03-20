@@ -1,60 +1,12 @@
-get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
-string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
-
-# template variables
-set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
-set(_NEED_REBUILD TRUE)
-set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
-
-set(_DEP_VER 7.81.0)
-string(REPLACE "." "_" _DEP_VER_ "${_DEP_VER}")
-if (DEFINED ENV{OSS_URL})
-    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-${_DEP_NAME}-${_DEP_VER_}.tar.gz)
-else ()
-    set(_DEP_URL https://codeload.github.com/${_DEP_NAME}/${_DEP_NAME}/tar.gz/refs/tags/${_DEP_NAME}-${_DEP_VER_})
-endif ()
-
-SetDepPrefix()
-CheckVersion()
-message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DEP_PREFIX}, "
-        "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
-
-ExistsLib()
-if ((${_NEED_REBUILD}) OR (${_LIB_DOES_NOT_EXISTS}))
-    DownloadDep()
-    ExtractDep()
-    AutoReconf()
-    #    BuildConf()
-    set(_EXTRA_DEFINE --with-openssl --enable-shared=no)
-    Configure()
-    MakeBuild()
-    MakeInstall()
-endif ()
-
-SetDepPath()
-message(STATUS "${_DEP_NAME}: ${_DEP_UNAME}_LIB_DIR=${${_DEP_UNAME}_LIB_DIR}, "
-        "${_DEP_UNAME}_INCLUDE_DIR=${${_DEP_UNAME}_INCLUDE_DIR}")
-AppendCMakePrefix()
-
-include(FindPkgConfig)
-pkg_check_modules(Curl libcurl REQUIRED)
-if (NOT Curl_FOUND)
-    message(FATAL_ERROR "Curl not found.")
-else ()
-    message(STATUS "Found curl. [Curl_LIBRARIES=${Curl_LIBRARIES}, Curl_INCLUDE_DIRS=${Curl_INCLUDE_DIRS}]")
-endif ()
-
-unset(_DEP_NAME)
-unset(_DEP_UNAME)
-unset(_DEP_VER)
-unset(_DEP_PREFIX)
-unset(_NEED_REBUILD)
-unset(_DEP_CUR_DIR)
-unset(_DEP_BIN_DIR)
-unset(_DEP_LIB_DIR)
-unset(_DEP_INCLUDE_DIR)
-unset(_DEP_NAME_SPACE)
-unset(_DEP_NAME_INSTALL_CHECK)
-unset(_EXTRA_DEFINE)
-unset(_MAKE_BUILD_EXTRA_DEFINE)
-unset(_CMAKE_INSTALL_EXTRA_DEFINE)
+function(Process)
+    PrepareDeps(7.81.0 MODULES curl)
+    AddProject(
+            DEP_AUTHOR ${_DEP_NAME}
+            DEP_PROJECT ${_DEP_NAME}
+            DEP_TAG ${_DEP_NAME}-${_DEP_VER_}
+            OSS_FILE ${_DEP_NAME}-${_DEP_NAME}-${_DEP_VER_}.tar.gz
+            CONFIGURE_DEFINE --with-openssl --enable-shared=no
+            AUTO_RE_CONF MAKE INSTALL)
+endfunction(Process)
+Process()
+ProcessAddLibrary()

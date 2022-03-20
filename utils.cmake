@@ -127,7 +127,7 @@ function(IsEmpty)
         list(LENGTH _SRC_DIR _DIR_TO_CHECK_SIZE)
     endif ()
     set(_DIR_TO_CHECK_SIZE ${_DIR_TO_CHECK_SIZE} PARENT_SCOPE)
-    message(STATUS "Empty check, _DIR_TO_CHECK=${_DIR_TO_CHECK}, _DIR_TO_CHECK_SIZE=${_DIR_TO_CHECK_SIZE}")
+    #    message(STATUS "Empty check, _DIR_TO_CHECK=${_DIR_TO_CHECK}, _DIR_TO_CHECK_SIZE=${_DIR_TO_CHECK_SIZE}")
 endfunction()
 
 function(ExistsLib)
@@ -307,6 +307,27 @@ function(DownloadDepV2 _GIT_USER)
     endif ()
 endfunction(DownloadDepV2)
 
+function(DownloadDepV3 version url)
+    CheckVarsV2(_DEP_NAME _DEP_CUR_DIR)
+
+    if (NOT EXISTS ${_DEP_CUR_DIR}/packages/${_DEP_NAME}-${version}.tar.gz)
+        file(MAKE_DIRECTORY ${_DEP_CUR_DIR}/packages)
+        set(_DEST_DOWNLOADING ${_DEP_CUR_DIR}/packages/${_DEP_NAME}-${version}.downloading)
+        set(_DEST ${_DEP_CUR_DIR}/packages/${_DEP_NAME}-${version}.tar.gz)
+        message(STATUS "Downloading ${_DEP_NAME}:${url}, DEST=${_DEST_DOWNLOADING}")
+        execute_process(
+                COMMAND wget -O ${_DEST_DOWNLOADING} ${url}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Downloading ${_DEP_NAME}: ${url} - FAIL")
+        endif ()
+        execute_process(
+                COMMAND mv ${_DEST_DOWNLOADING} ${_DEST}
+                RESULT_VARIABLE rc)
+        message(STATUS "Download ${_DEP_NAME}: ${url} - done")
+    endif ()
+endfunction(DownloadDepV3)
+
 function(GitClone)
     set(_VARS _DEP_NAME _DEP_VER _DEP_CUR_DIR _DEP_URL)
     CheckVars()
@@ -339,6 +360,37 @@ function(GitClone)
     message(STATUS "Checking out ${_DEP_NAME}: ${_DEP_VER} - done")
 endfunction()
 
+function(GitCloneV2 repository version)
+    CheckVars(_DEP_NAME _DEP_CUR_DIR)
+
+    find_package(Git REQUIRED)
+
+    set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/src)
+    IsEmpty()
+    if (_DIR_TO_CHECK_SIZE EQUAL 0)
+        message(STATUS "Cloning ${_DEP_NAME}: ${repository}")
+        execute_process(
+                COMMAND "${GIT_EXECUTABLE}" clone --recurse-submodules ${repository} src
+                WORKING_DIRECTORY "${_DEP_CUR_DIR}"
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Cloning ${_DEP_NAME}: ${repository} - FAIL")
+        endif ()
+        message(STATUS "Cloning ${_DEP_NAME}: ${repository} - done")
+    endif ()
+
+    # check out commit
+    message(STATUS "Checking out ${_DEP_NAME}: ${version}")
+    execute_process(
+            COMMAND git checkout ${version}
+            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+            RESULT_VARIABLE rc)
+    if (NOT "${rc}" STREQUAL "0")
+        message(FATAL_ERROR "Checking out ${_DEP_NAME}: ${version} - FAIL")
+    endif ()
+    message(STATUS "Checking out ${_DEP_NAME}: ${version} - done")
+endfunction(GitCloneV2)
+
 function(ExtractDep)
     set(_VARS _DEP_NAME _DEP_VER _DEP_CUR_DIR)
     CheckVars()
@@ -358,6 +410,26 @@ function(ExtractDep)
         message(STATUS "Extracting ${_DEP_NAME} - done")
     endif ()
 endfunction()
+
+function(ExtractDepV2 version)
+    set(_VARS _DEP_NAME _DEP_CUR_DIR)
+    CheckVars()
+
+    set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/src)
+    IsEmpty()
+    if (_DIR_TO_CHECK_SIZE EQUAL 0)
+        file(MAKE_DIRECTORY ${_DEP_CUR_DIR}/src)
+        message(STATUS "Extracting ${_DEP_NAME}")
+        execute_process(
+                COMMAND tar -xf ${_DEP_CUR_DIR}/packages/${_DEP_NAME}-${version}.tar.gz
+                --strip-components 1 -C ${_DEP_CUR_DIR}/src
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Extracting ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Extracting ${_DEP_NAME} - done")
+    endif ()
+endfunction(ExtractDepV2)
 
 function(CMakeNinja)
     set(_VARS _DEP_NAME _DEP_CUR_DIR _DEP_PREFIX)
@@ -398,6 +470,45 @@ function(CMakeNinja)
         message(STATUS "Configuring ${_DEP_NAME} - done")
     endif ()
 endfunction()
+
+function(CMakeNinjaV2)
+    CheckVars(_DEP_NAME _DEP_CUR_DIR _DEP_PREFIX)
+
+    if (NOT DEFINED _BUILD_TYPE)
+        set(_BUILD_TYPE Release)
+    endif ()
+
+    if (_PIC_OFF)
+        set(_PIC_FLAG "-DCMAKE_POSITION_INDEPENDENT_CODE=OFF")
+    else ()
+        set(_PIC_FLAG "-DCMAKE_POSITION_INDEPENDENT_CODE=ON")
+    endif ()
+    if (NOT EXISTS ${_DEP_CUR_DIR}/build/build.ninja)
+        file(MAKE_DIRECTORY ${_DEP_CUR_DIR}/build)
+        string(REPLACE ";" "\\;" CMAKE_PREFIX_PATH_STR "${CMAKE_PREFIX_PATH}")
+        message(STATUS "Configuring ${_DEP_NAME}, CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}, "
+                "CMAKE_PREFIX_PATH_STR ${CMAKE_PREFIX_PATH_STR}")
+        execute_process(
+                COMMAND ${CMAKE_COMMAND}
+                -G Ninja
+                -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+                -DCMAKE_BUILD_TYPE=${_BUILD_TYPE}
+                -DCMAKE_INSTALL_PREFIX=${_DEP_PREFIX}
+                -DBUILD_SHARED_LIBS=OFF
+                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
+                ${_PIC_FLAG}
+                ${_EXTRA_DEFINE}
+                ${_DEP_CUR_DIR}/src
+                WORKING_DIRECTORY ${_DEP_CUR_DIR}/build
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Configuring ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Configuring ${_DEP_NAME} - done")
+    endif ()
+endfunction(CMakeNinjaV2)
 
 function(MesonNinja)
     set(_VARS _DEP_NAME _DEP_CUR_DIR _DEP_PREFIX)
@@ -445,6 +556,31 @@ function(NinjaBuild)
     endif ()
 endfunction()
 
+function(NinjaBuildV2)
+    CheckVars(_DEP_NAME _DEP_CUR_DIR _DEP_BUILD_DONE)
+
+    if (NOT DEFINED _DEP_NAME_BUILD_CHECK)
+        set(_DEP_NAME_BUILD_CHECK lib${_DEP_NAME}.a)
+    endif ()
+
+    set(_DEP_LIB_DIR_ ${_DEP_CUR_DIR}/build/lib/${_DEP_NAME_BUILD_CHECK})
+    set(_DEP_LIB64_DIR_ ${_DEP_CUR_DIR}/build/lib64/${_DEP_NAME_BUILD_CHECK})
+
+    if (NOT ${_DEP_BUILD_DONE})
+        message(STATUS "Building ${_DEP_NAME}")
+        execute_process(
+                COMMAND ninja
+                WORKING_DIRECTORY ${_DEP_CUR_DIR}/build
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Building ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Building ${_DEP_NAME} - done")
+    else ()
+        message(STATUS "Skip ninja build for ${_DEP_NAME}")
+    endif ()
+endfunction(NinjaBuildV2)
+
 function(NinjaInstall)
     set(_VARS _DEP_NAME _DEP_PREFIX _DEP_CUR_DIR)
     CheckVars()
@@ -473,6 +609,29 @@ function(NinjaInstall)
         message(STATUS "Skip ninja install for ${_DEP_NAME}")
     endif ()
 endfunction()
+
+function(NinjaInstallV2)
+    CheckVars(_DEP_NAME _DEP_PREFIX _DEP_CUR_DIR)
+
+    if (${_PERMISSION})
+        set(_PERMISSION_ROLE "sudo")
+    endif ()
+
+    ExistsLib()
+    if (NOT ${_DEP_INSTALL_DONE})
+        message(STATUS "Installing ${_DEP_NAME}")
+        execute_process(
+                COMMAND ${_PERMISSION_ROLE} ninja install
+                WORKING_DIRECTORY ${_DEP_CUR_DIR}/build
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Installing ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Installing ${_DEP_NAME} - done")
+    else ()
+        message(STATUS "Skip ninja install for ${_DEP_NAME}")
+    endif ()
+endfunction(NinjaInstallV2)
 
 function(Autogen)
     set(_VARS _DEP_NAME _DEP_CUR_DIR)
@@ -531,6 +690,25 @@ function(AutoReconf)
     endif ()
 endfunction()
 
+function(AutoReConfV2)
+    CheckVarsV2(_DEP_CUR_DIR)
+
+    if (NOT EXISTS ${_DEP_CUR_DIR}/src/PHASE_AUTO_RE_CONF)
+        execute_process(
+                COMMAND env
+                autoreconf -fi
+                WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+                RESULT_VARIABLE rc)
+
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Auto re-conf ${_DEP_NAME} - FAIL")
+        else ()
+            file(WRITE ${_DEP_CUR_DIR}/src/PHASE_AUTO_RE_CONF "done")
+            message(STATUS "Auto re-conf ${_DEP_NAME} - done")
+        endif ()
+    endif ()
+endfunction(AutoReConfV2)
+
 function(Configure)
     set(_VARS _DEP_NAME _DEP_CUR_DIR)
     CheckVars()
@@ -554,6 +732,43 @@ function(Configure)
                 ./${CONFIG_CMD}
                 --prefix=${_DEP_PREFIX}
                 ${_EXTRA_DEFINE}
+                WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Configuring ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Configuring ${_DEP_NAME} - done")
+        file(WRITE ${_DEP_CUR_DIR}/src/PHASE_CONFIGURE "done")
+    endif ()
+endfunction()
+
+function(ConfigureV2)
+    set(options NoneOpt)
+    set(oneValueArgs CONFIGURE_COMMAND EXTRA_DEFINE)
+    set(multiValueArgs NoneMulti)
+    cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    CheckVars(_DEP_NAME _DEP_CUR_DIR)
+
+    if (EXISTS ${_DEP_CUR_DIR}/src/configure)
+        set(CONFIG_CMD configure)
+    elseif (EXISTS ${_DEP_CUR_DIR}/src/config)
+        set(CONFIG_CMD config)
+    endif ()
+
+    if ("${CONFIGURE_COMMAND}" STREQUAL "")
+        set(CONFIGURE_COMMAND ${CONFIG_CMD} --prefix=${_DEP_PREFIX} ${P_EXTRA_DEFINE})
+    endif ()
+
+    if (DEFINED CONFIG_CMD AND DEFINED CONFIG_CMD AND NOT EXISTS ${_DEP_CUR_DIR}/src/PHASE_CONFIGURE)
+        message(STATUS "Configuring ${_DEP_NAME} with command ${CONFIGURE_COMMAND}")
+        execute_process(
+                COMMAND env
+                CC=${CMAKE_C_COMPILER}
+                CXX=${CMAKE_CXX_COMPILER}
+                CFLAGS=-fPIC
+                CXXFLAGS=-fPIC
+                ./${CONFIGURE_COMMAND}
                 WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
@@ -622,6 +837,39 @@ function(MakeBuild)
     endif ()
 endfunction()
 
+function(MakeBuildV2)
+    CheckVars(_DEP_NAME _DEP_CUR_DIR _DEP_BUILD_DONE)
+    set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/build)
+    IsEmpty()
+    if (_DIR_TO_CHECK_SIZE EQUAL 0)
+        set(_CHECK_LIB_FIFE ${_DEP_CUR_DIR}/src/src/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
+        set(_WORK_DIR ${_DEP_CUR_DIR}/src)
+    else ()
+        set(_CHECK_LIB_FIFE ${_DEP_CUR_DIR}/build/{_BUILD_LIB_DIR}/lib${_DEP_NAME}.a)
+        set(_WORK_DIR ${_DEP_CUR_DIR}/build)
+    endif ()
+
+    if (NOT ${_DEP_BUILD_DONE})
+        message(STATUS "Building ${_DEP_NAME}")
+        include(ProcessorCount)
+        ProcessorCount(cpus)
+        execute_process(
+                COMMAND env
+                CC=${CMAKE_C_COMPILER}
+                CXX=${CMAKE_CXX_COMPILER}
+                make
+                PREFIX=${_DEP_PREFIX}
+                -j${cpus}
+                ${_MAKE_BUILD_EXTRA_DEFINE}
+                WORKING_DIRECTORY ${_WORK_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Building ${_DEP_NAME} - FAIL _WORK_DIR=${_WORK_DIR}")
+        endif ()
+        message(STATUS "Building ${_DEP_NAME} - done")
+    endif ()
+endfunction(MakeBuildV2)
+
 function(MakeInstall)
     set(_VARS _DEP_NAME _DEP_CUR_DIR _DEP_PREFIX)
     CheckVars()
@@ -653,6 +901,36 @@ function(MakeInstall)
     endif ()
 endfunction()
 
+function(MakeInstallV2)
+    CheckVars(_DEP_NAME _DEP_CUR_DIR _DEP_PREFIX _DEP_INSTALL_DONE)
+
+    set(_DIR_TO_CHECK ${_DEP_CUR_DIR}/build)
+    IsEmpty()
+    if (_DIR_TO_CHECK_SIZE EQUAL 0)
+        set(_WORK_DIR ${_DEP_CUR_DIR}/src)
+    else ()
+        set(_WORK_DIR ${_DEP_CUR_DIR}/build)
+    endif ()
+
+    if (NOT ${_DEP_INSTALL_DONE})
+        message(STATUS "Installing ${_DEP_NAME}")
+        execute_process(
+                COMMAND env
+                CC=${CMAKE_C_COMPILER}
+                CXX=${CMAKE_CXX_COMPILER}
+                make
+                install
+                PREFIX=${_DEP_PREFIX}
+                ${_CMAKE_INSTALL_EXTRA_DEFINE}
+                WORKING_DIRECTORY ${_WORK_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Installing ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Installing ${_DEP_NAME} - done")
+    endif ()
+endfunction(MakeInstallV2)
+
 function(Bootstrap)
     set(_VARS _DEP_NAME _DEP_CUR_DIR)
     CheckVars()
@@ -672,7 +950,145 @@ function(Bootstrap)
 endfunction()
 
 macro(SetExternalVars)
+    CheckVarsV2(_EXTERNAL_VARS)
     foreach (_V IN LISTS _EXTERNAL_VARS)
         set(${_V} ${${_V}} PARENT_SCOPE)
     endforeach ()
 endmacro(SetExternalVars)
+
+macro(SetDepPrefixV2)
+    CheckVarsV2(_DEP_UNAME _DEP_CUR_DIR _DEP_PREFIX)
+
+    set(_DEP_PREFIX ${${_DEP_UNAME}_PREFIX})
+    if ("${_DEP_PREFIX}" STREQUAL "")
+        if ("${DEPS_DIR}" STREQUAL "")
+            set(_DEP_PREFIX ${_DEP_CUR_DIR})
+        else ()
+            set(_DEP_PREFIX ${DEPS_DIR}/${_DEP_NAME})
+        endif ()
+        set(${_DEP_UNAME}_PREFIX ${_DEP_PREFIX})
+    endif ()
+endmacro(SetDepPrefixV2)
+
+macro(PrepareDeps version)
+    set(options NoneOpt)
+    set(oneValueArgs NoneOneArgs)
+    set(multiValueArgs MODULES)
+    cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
+    string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
+    set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
+    set(_NEED_REBUILD TRUE)
+    set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
+    set(_EXTERNAL_VARS)
+    set(_DEP_VER ${version})
+    set(_DEP_MODULES ${P_MODULES})
+    string(REPLACE "." "_" _DEP_VER_ "${_DEP_VER}")
+
+    SetDepPrefixV2()
+    CheckVersionV2()
+
+    # check library output
+    list(GET _DEP_MODULES 0 _FIRST_DEP_MODULE)
+    find_library(build_library_${_DEP_NAME}
+            NAMES ${_FIRST_DEP_MODULE} lib${_FIRST_DEP_MODULE}
+            PATHS ${_DEP_CUR_DIR}/src ${_DEP_CUR_DIR}/build ${_DEP_CUR_DIR}
+            PATH_SUFFIXES src .libs lib lib64 lib/.libs lib64/.libs
+            NO_DEFAULT_PATH)
+    if ("${build_library_${_DEP_NAME}}" STREQUAL "build_library_${_DEP_NAME}-NOTFOUND")
+        set(_DEP_BUILD_DONE FALSE)
+    else ()
+        set(_DEP_BUILD_DONE TRUE)
+    endif ()
+
+    find_library(output_library_${_DEP_NAME}
+            NAMES ${_FIRST_DEP_MODULE} lib${_FIRST_DEP_MODULE}
+            PATHS ${_DEP_PREFIX}
+            PATH_SUFFIXES lib lib64
+            NO_DEFAULT_PATH)
+    if ("${output_library_${_DEP_NAME}}" STREQUAL "output_library_${_DEP_NAME}-NOTFOUND")
+        set(_DEP_INSTALL_DONE FALSE)
+    else ()
+        set(_DEP_INSTALL_DONE TRUE)
+    endif ()
+    message(STATUS "[PrepareDeps] prepare done. [DEP=${_DEP_NAME}, MODULES=${P_MODULES}, "
+            "BUILD_DONE=${_DEP_BUILD_DONE}, INSTALL_DONE=${_DEP_INSTALL_DONE} ${build_library_${_DEP_NAME}}, "
+            "DEP_PREFIX=${_DEP_PREFIX} ${output_library_${_DEP_NAME}}]")
+endmacro(PrepareDeps)
+
+macro(AddLibrary MODULE)
+    set(options NONE)
+    set(oneValueArgs PREFIX)
+    set(multiValueArgs SUBMODULES)
+    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    message(STATUS "[AddLibrary] MODULE=${MODULE} PREFIX=${ARG_PREFIX} DEP=${ARG_DEP} SUBMODULES=${ARG_SUBMODULES}")
+
+
+    if ("${ARG_PREFIX}" STREQUAL "")
+        message(FATAL_ERROR "PREFIX should not be empty")
+    endif ()
+    foreach (I IN LISTS ARG_SUBMODULES)
+        set(TGT ${MODULE}::${I})
+        message(STATUS "[AddLibrary] TARGET=${TGT}")
+        add_library(${TGT} STATIC IMPORTED GLOBAL)
+        set_target_properties(${TGT} PROPERTIES
+                IMPORTED_LOCATION "${ARG_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${I}${CMAKE_STATIC_LIBRARY_SUFFIX}"
+                INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
+                INTERFACE_INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
+                )
+    endforeach ()
+endmacro(AddLibrary)
+
+macro(AddProject)
+    set(options MAKE INSTALL NINJA AUTO_RE_CONF)
+    set(oneValueArgs GIT_REPOSITORY GIT_TAG DEP_AUTHOR DEP_PROJECT DEP_TAG OSS_FILE)
+    set(multiValueArgs CONFIGURE_DEFINE)
+    cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if ("${P_GIT_REPOSITORY}" STREQUAL "")
+        if (DEFINED ENV{OSS_URL})
+            set(_DEP_URL $ENV{OSS_URL}/${P_OSS_FILE})
+        else ()
+            set(_DEP_URL https://codeload.github.com/${P_DEP_AUTHOR}/${P_DEP_PROJECT}/tar.gz/refs/tags/${P_DEP_TAG})
+        endif ()
+        message(STATUS "[AddProject] URL=${_DEP_URL}, VERSION=${_DEP_VER}")
+        DownloadDepV3(${_DEP_VER} ${_DEP_URL})
+        ExtractDepV2(${_DEP_VER})
+    else ()
+        message(STATUS "[AddProject] GIT=${P_GIT_REPOSITORY}, TAG=${P_GIT_TAG}")
+        GitCloneV2(GIT_TAG)
+    endif ()
+    if (${P_AUTO_RE_CONF})
+        AutoReConfV2()
+    endif ()
+    ConfigureV2(EXTRA_DEFINE ${P_CONFIGURE_DEFINE})
+    if (${P_MAKE})
+        MakeBuildV2()
+    endif ()
+    if (${P_INSTALL})
+        MakeInstallV2()
+    endif ()
+    if (${P_NINJA})
+        CMakeNinjaV2()
+        NinjaBuildV2()
+        NinjaInstallV2()
+    endif ()
+
+    SetDepPath()
+    AppendCMakePrefix()
+
+    # append external vars
+    list(APPEND _EXTERNAL_VARS _DEP_NAME)
+    list(APPEND _EXTERNAL_VARS _DEP_PREFIX)
+    list(APPEND _EXTERNAL_VARS _DEP_MODULES)
+
+    SetExternalVars()
+endmacro(AddProject)
+
+macro(ProcessAddLibrary)
+    AddLibrary(${_DEP_NAME} PREFIX ${_DEP_PREFIX} SUBMODULES ${_DEP_MODULES})
+    unset(_DEP_NAME)
+    unset(_DEP_PREFIX)
+    unset(_DEP_MODULES)
+endmacro(ProcessAddLibrary)

@@ -1,5 +1,5 @@
 include(${CMAKE_CURRENT_LIST_DIR}/../boost/check.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/../openssl/check.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../openssl/checkv1.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../libevent/check.cmake)
 
 get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
