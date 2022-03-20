@@ -57,12 +57,7 @@ set(LIBRARIES
         spdlog
         )
 
-set(BUILD_EXTERNAL_LIBRARY FALSE)
-
-include(${CMAKE_CURRENT_LIST_DIR}/openssl/${CHECK_FILE})
-include(${CMAKE_CURRENT_LIST_DIR}/spdlog/${CHECK_FILE})
-include(${CMAKE_CURRENT_LIST_DIR}/curl/${CHECK_FILE})
-
+set(BUILD_EXTERNAL_LIBRARY TRUE)
 
 # disable build library
 set(BUILD_DPDK FALSE)

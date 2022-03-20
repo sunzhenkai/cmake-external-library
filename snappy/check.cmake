@@ -11,7 +11,7 @@ if (DEFINED ENV{OSS_URL})
     set(_DEP_URL $ENV{OSS_URL}/submodule-${_DEP_NAME}-${_DEP_VER}.tar.gz)
 else ()
     set(_DEP_VER 2b63814b15a2aaae54b7943f0cd935892fae628f)
-    set(_DEP_URL https://gitee.com/mirrors/Snappy.git)
+    set(_DEP_URL https://github.com/google/snappy.git)
 endif ()
 
 SetDepPrefix()
