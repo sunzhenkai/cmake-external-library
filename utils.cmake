@@ -474,6 +474,10 @@ endfunction()
 
 function(CMakeNinjaV2)
     CheckVars(_DEP_NAME _DEP_CUR_DIR _DEP_PREFIX)
+    set(options NoneOptions)
+    set(oneValueArgs NoneArg)
+    set(multiValueArgs NINJA_EXTRA_DEFINE)
+    cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if (NOT DEFINED _BUILD_TYPE)
         set(_BUILD_TYPE Release)
@@ -500,7 +504,7 @@ function(CMakeNinjaV2)
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                 -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
                 ${_PIC_FLAG}
-                ${_EXTRA_DEFINE}
+                ${P_NINJA_EXTRA_DEFINE}
                 ${_DEP_CUR_DIR}/src
                 WORKING_DIRECTORY ${_DEP_CUR_DIR}/build
                 RESULT_VARIABLE rc)
@@ -1047,7 +1051,7 @@ endmacro(AddLibrary)
 macro(AddProject)
     set(options MAKE INSTALL NINJA AUTO_RE_CONF CONFIGURE)
     set(oneValueArgs GIT_REPOSITORY GIT_TAG DEP_AUTHOR DEP_PROJECT DEP_TAG OSS_FILE)
-    set(multiValueArgs CONFIGURE_DEFINE)
+    set(multiValueArgs CONFIGURE_DEFINE NINJA_EXTRA_DEFINE)
     cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if (NOT ${_DEP_INSTALL_DONE})
