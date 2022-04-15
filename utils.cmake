@@ -457,6 +457,8 @@ function(CMakeNinja)
                 -DCMAKE_BUILD_TYPE=${_BUILD_TYPE}
                 -DCMAKE_INSTALL_PREFIX=${_DEP_PREFIX}
                 -DBUILD_SHARED_LIBS=OFF
+                -DCMAKE_INSTALL_LIBDIR=lib
+                -DCMAKE_INSTALL_BINDIR=bin
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                 -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
@@ -500,6 +502,8 @@ function(CMakeNinjaV2)
                 -DCMAKE_BUILD_TYPE=${_BUILD_TYPE}
                 -DCMAKE_INSTALL_PREFIX=${_DEP_PREFIX}
                 -DBUILD_SHARED_LIBS=OFF
+                -DCMAKE_INSTALL_LIBDIR=lib
+                -DCMAKE_INSTALL_BINDIR=bin
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                 -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
@@ -794,6 +798,8 @@ function(CMakeBuild)
             -DCMAKE_BUILD_TYPE=${_BUILD_TYPE}
             -DCMAKE_INSTALL_PREFIX=${_DEP_PREFIX}
             -DBUILD_SHARED_LIBS=OFF
+            -DCMAKE_INSTALL_LIBDIR=lib
+            -DCMAKE_INSTALL_BINDIR=bin
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
             -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
@@ -1035,10 +1041,16 @@ macro(AddLibrary MODULE)
     endif ()
     foreach (I IN LISTS ARG_SUBMODULES)
         set(TGT ${MODULE}::${I})
-        message(STATUS "[AddLibrary] TARGET=${TGT}")
         add_library(${TGT} STATIC IMPORTED GLOBAL)
+        find_library(add_library_${MODULE}_${I}
+                NAMES lib${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}
+                PATHS ${ARG_PREFIX}
+                PATH_SUFFIXES lib lib64
+                NO_DEFAULT_PATH)
+        message(STATUS "[AddLibrary] TARGET=${TGT} LIB=${add_library_${MODULE}_${I}}")
         set_target_properties(${TGT} PROPERTIES
-                IMPORTED_LOCATION "${ARG_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${I}${CMAKE_STATIC_LIBRARY_SUFFIX}"
+                # IMPORTED_LOCATION "${ARG_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${I}${CMAKE_STATIC_LIBRARY_SUFFIX}"
+                IMPORTED_LOCATION "${add_library_${MODULE}_${I}}"
                 INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
                 INTERFACE_INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
                 # eg. pthread;z
