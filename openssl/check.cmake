@@ -5,7 +5,7 @@ function(Process)
             DEP_PROJECT ${_DEP_NAME}
             DEP_TAG OpenSSL_${_DEP_VER}
             OSS_FILE ${_DEP_NAME}-OpenSSL_${_DEP_VER}.tar.gz
-            MAKE INSTALL)
+            CONFIGURE MAKE INSTALL)
 endfunction(Process)
 Process()
 ProcessAddLibrary()

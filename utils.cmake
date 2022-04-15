@@ -765,18 +765,18 @@ function(ConfigureV2)
     endif ()
 
     if ("${CONFIGURE_COMMAND}" STREQUAL "")
-        set(CONFIGURE_COMMAND ${CONFIG_CMD} --prefix=${_DEP_PREFIX} ${P_EXTRA_DEFINE})
+        set(CONFIGURE_COMMAND ${CONFIG_CMD} --prefix=${_DEP_PREFIX})
     endif ()
 
     if (DEFINED CONFIG_CMD AND DEFINED CONFIG_CMD AND NOT EXISTS ${_DEP_CUR_DIR}/src/PHASE_CONFIGURE)
-        message(STATUS "Configuring ${_DEP_NAME} with command ${CONFIGURE_COMMAND}")
+        message(STATUS "Configuring ${_DEP_NAME} with command ${CONFIGURE_COMMAND} EXTRA_DEFINE=${P_EXTRA_DEFINE}")
         execute_process(
                 COMMAND env
                 CC=${CMAKE_C_COMPILER}
                 CXX=${CMAKE_CXX_COMPILER}
                 CFLAGS=-fPIC
                 CXXFLAGS=-fPIC
-                ./${CONFIGURE_COMMAND}
+                ./${CONFIGURE_COMMAND} ${P_EXTRA_DEFINE}
                 WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
