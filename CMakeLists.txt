@@ -55,6 +55,7 @@ set(LIBRARIES
         brpc
         curl
         spdlog
+        json
         )
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)
