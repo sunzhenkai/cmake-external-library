@@ -1,5 +1,7 @@
 function(Process)
-    PrepareDeps(3.10.5 MODULES json)
+    PrepareDeps(3.10.5 FindByHeader
+            FindPathSuffix include/nlohmann
+            MODULES json)
     AddProject(
             DEP_AUTHOR nlohmann
             DEP_PROJECT ${_DEP_NAME}
@@ -8,4 +10,4 @@ function(Process)
             NINJA)
 endfunction(Process)
 Process()
-ProcessAddLibrary()
+ProcessFindPackage(nlohmann_json)

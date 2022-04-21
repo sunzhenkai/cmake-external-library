@@ -983,9 +983,9 @@ macro(SetDepPrefixV2)
 endmacro(SetDepPrefixV2)
 
 macro(PrepareDeps version)
-    set(options NoneOpt)
+    set(options FindByHeader)
     set(oneValueArgs NoneOneArgs)
-    set(multiValueArgs MODULES)
+    set(multiValueArgs MODULES FindPathSuffix)
     cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
@@ -1013,11 +1013,22 @@ macro(PrepareDeps version)
         set(_DEP_BUILD_DONE TRUE)
     endif ()
 
-    find_library(output_library_${_DEP_NAME}
-            NAMES ${_FIRST_DEP_MODULE} lib${_FIRST_DEP_MODULE}
-            PATHS ${_DEP_PREFIX}
-            PATH_SUFFIXES lib lib64
-            NO_DEFAULT_PATH)
+    if (${P_FindByHeader})
+        find_file(output_library_${_DEP_NAME}
+                NAMES ${_FIRST_DEP_MODULE}.h ${_FIRST_DEP_MODULE}.cc ${_FIRST_DEP_MODULE}.c
+                ${_FIRST_DEP_MODULE}.hpp ${_FIRST_DEP_MODULE}.hxx ${_FIRST_DEP_MODULE}.H
+                ${_FIRST_DEP_MODULE}.hh ${_FIRST_DEP_MODULE}.h++
+                PATHS ${_DEP_PREFIX}
+                PATH_SUFFIXES include ${P_FindPathSuffix}
+                NO_DEFAULT_PATH)
+    else ()
+        find_library(output_library_${_DEP_NAME}
+                NAMES ${_FIRST_DEP_MODULE} lib${_FIRST_DEP_MODULE}
+                PATHS ${_DEP_PREFIX}
+                PATH_SUFFIXES lib lib64
+                NO_DEFAULT_PATH)
+    endif ()
+
     if ("${output_library_${_DEP_NAME}}" STREQUAL "output_library_${_DEP_NAME}-NOTFOUND")
         set(_DEP_INSTALL_DONE FALSE)
     else ()
@@ -1116,3 +1127,12 @@ macro(ProcessAddLibrary)
     unset(_DEP_PREFIX)
     unset(_DEP_MODULES)
 endmacro(ProcessAddLibrary)
+
+macro(ProcessFindPackage MODULE)
+    find_package(${MODULE} REQUIRED PATHS ${_DEP_PREFIX} NO_DEFAULT_PATH)
+
+    # unset template variables
+    unset(_DEP_NAME)
+    unset(_DEP_PREFIX)
+    unset(_DEP_MODULES)
+endmacro(ProcessFindPackage)
