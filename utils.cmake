@@ -207,8 +207,7 @@ function(SetDepPath)
 endfunction()
 
 function(AppendCMakePrefix)
-    set(_VARS _DEP_UNAME _DEP_PREFIX)
-    CheckVars()
+    CheckVarsV2(_DEP_UNAME _DEP_PREFIX)
 
     list(FIND CMAKE_PREFIX_PATH ${_DEP_PREFIX} _DEP_INDEX)
     if (_DEP_INDEX EQUAL -1)
@@ -1071,8 +1070,61 @@ macro(AddLibrary MODULE)
     endforeach ()
 endmacro(AddLibrary)
 
+if (NOT CMAKE_PROPERTY_LIST)
+    execute_process(COMMAND cmake --help-property-list OUTPUT_VARIABLE CMAKE_PROPERTY_LIST)
+    # Convert command output into a CMake list
+    string(REGEX REPLACE ";" "\\\\;" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+    string(REGEX REPLACE "\n" ";" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+endif ()
+
+function(PrintTargetProperties target)
+    if (NOT TARGET ${target})
+        message(STATUS "There is no target named '${target}'")
+        return()
+    endif ()
+
+    foreach (property ${CMAKE_PROPERTY_LIST})
+        string(REPLACE "<CONFIG>" "${CMAKE_BUILD_TYPE}" property ${property})
+
+        if (property STREQUAL "LOCATION" OR property MATCHES "^LOCATION_" OR property MATCHES "_LOCATION$")
+            continue()
+        endif ()
+
+        get_property(was_set TARGET ${target} PROPERTY ${property} SET)
+        if (was_set)
+            get_target_property(value ${target} ${property})
+            message("${target} ${property} = ${value}")
+        endif ()
+    endforeach ()
+endfunction()
+
+macro(AddExecutables)
+    set(options NoneOpt)
+    set(oneValueArgs DEP_NAME PREFIX)
+    set(multiValueArgs EXECUTABLES)
+    cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    foreach (I IN LISTS P_EXECUTABLES)
+        set(EXE_TARGET ${P_DEP_NAME}::bin::${I})
+        add_executable(${EXE_TARGET} IMPORTED)
+        find_file(binary_path_${I}
+                NAMES ${I}
+                PATHS ${P_PREFIX}
+                PATH_SUFFIXES bin bin64
+                NO_DEFAULT_PATH)
+        if ("${binary_path_${I}}" STREQUAL "binary_path_${I}-NOTFOUND")
+            message(FATAL_ERROR "[AddExecutables] executable file not found. [name=${I}, prefix=${P_PREFIX}]")
+        endif ()
+        set_target_properties(${EXE_TARGET} PROPERTIES
+                IMPORTED_LOCATION "${binary_path_${I}}")
+        message(STATUS "[AddExecutables] TARGET=${EXE_TARGET} BINARY=${binary_path_${I}}")
+        # PrintTargetProperties(${EXE_TARGET})
+        unset(EXE_TARGET)
+    endforeach ()
+endmacro(AddExecutables)
+
 macro(AddProject)
-    set(options MAKE INSTALL NINJA AUTO_RE_CONF CONFIGURE)
+    set(options MAKE INSTALL NINJA AUTO_RE_CONF CONFIGURE AUTOGEN)
     set(oneValueArgs GIT_REPOSITORY GIT_TAG DEP_AUTHOR DEP_PROJECT DEP_TAG OSS_FILE)
     set(multiValueArgs CONFIGURE_DEFINE NINJA_EXTRA_DEFINE)
     cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -1090,6 +1142,9 @@ macro(AddProject)
         else ()
             message(STATUS "[AddProject] GIT=${P_GIT_REPOSITORY}, TAG=${P_GIT_TAG}")
             GitCloneV2(GIT_TAG)
+        endif ()
+        if (${P_AUTOGEN})
+            Autogen()
         endif ()
         if (${P_AUTO_RE_CONF})
             AutoReConfV2()
@@ -1122,7 +1177,16 @@ macro(AddProject)
 endmacro(AddProject)
 
 macro(ProcessAddLibrary)
+    set(options NoneOpt)
+    set(oneValueArgs NoneOne)
+    set(multiValueArgs EXECUTABLES)
+    cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
     AddLibrary(${_DEP_NAME} PREFIX ${_DEP_PREFIX} SUBMODULES ${_DEP_MODULES})
+    if (P_EXECUTABLES)
+        AddExecutables(DEP_NAME ${_DEP_NAME} PREFIX ${_DEP_PREFIX} EXECUTABLES ${P_EXECUTABLES})
+    endif ()
+
     unset(_DEP_NAME)
     unset(_DEP_PREFIX)
     unset(_DEP_MODULES)
@@ -1130,7 +1194,6 @@ endmacro(ProcessAddLibrary)
 
 macro(ProcessFindPackage MODULE)
     find_package(${MODULE} REQUIRED PATHS ${_DEP_PREFIX} NO_DEFAULT_PATH)
-
     # unset template variables
     unset(_DEP_NAME)
     unset(_DEP_PREFIX)

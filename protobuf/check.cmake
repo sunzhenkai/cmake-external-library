@@ -1,60 +1,33 @@
-get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
-string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
+# WARNING dependencies: autoconf automake libtool curl make g++ unzip
+function(Process)
+    PrepareDeps(3.20.0 MODULES protobuf)
+    AddProject(
+            DEP_AUTHOR protocolbuffers
+            DEP_PROJECT ${_DEP_NAME}
+            DEP_TAG v${_DEP_VER}
+            OSS_FILE ${_DEP_NAME}-all-${_DEP_VER}.tar.gz
+            CONFIGURE_DEFINE --enable-shared=no
+            AUTOGEN CONFIGURE MAKE INSTALL)
+endfunction(Process)
+Process()
+ProcessAddLibrary(EXECUTABLES protoc)
 
-# template variables
-set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
-set(_NEED_REBUILD TRUE)
-set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
+macro(GenerateProtobufMessage target)
+    set(options NoneOpt)
+    set(oneValueArgs OUTPUT PATH)
+    set(multiValueArgs FILES)
+    cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-set(_DEP_VER 3.9.1)
-if (DEFINED ENV{OSS_URL})
-    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-all-${_DEP_VER}.tar.gz)
-else ()
-    set(_DEP_URL https://github.com/google/${_DEP_NAME}/releases/download/v${_DEP_VER}/${_DEP_NAME}-all-${_DEP_VER}.tar.gz)
-endif ()
-
-SetDepPrefix()
-CheckVersion()
-message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DEP_PREFIX}, "
-        "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
-
-set(_DEP_NAME_INSTALL_CHECK "lib${_DEP_NAME}.a")
-if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/${_DEP_NAME_INSTALL_CHECK}))
-    DownloadDep()
-    ExtractDep()
-    Autogen()
-    set(_EXTRA_DEFINE --enable-shared=no)
-    Configure()
-    set(_BUILD_LIB_DIR ".libs")
-    MakeBuild()
-    MakeInstall()
-endif ()
-
-SetDepPath()
-AppendCMakePrefix()
-
-if (NOT DEFINED Protobuf_FOUND)
-    set(Protobuf_INCLUDE_DIR ${_DEP_PREFIX}/include)
-    set(Protobuf_USE_STATIC_LIBS ON)
-    find_package(Protobuf REQUIRED)
-
-    if (NOT DEFINED Protobuf_FOUND)
-        message(FATAL_ERROR "Missing protobuf, Protobuf_INCLUDE_DIR=${Protobuf_INCLUDE_DIR}")
-    endif ()
-else ()
-    message(STATUS "found protobuf")
-endif ()
-
-unset(_DEP_NAME)
-unset(_DEP_UNAME)
-unset(_DEP_VER)
-unset(_DEP_PREFIX)
-unset(_NEED_REBUILD)
-unset(_DEP_CUR_DIR)
-unset(_DEP_BIN_DIR)
-unset(_DEP_LIB_DIR)
-unset(_DEP_INCLUDE_DIR)
-unset(_DEP_NAME_SPACE)
-unset(_DEP_NAME_INSTALL_CHECK)
-unset(_BUILD_LIB_DIR)
-unset(_EXTRA_DEFINE)
+    file(GLOB T_PROTO_FILES ${P_FILES})
+    get_property(proto_binary TARGET protobuf::bin::protoc PROPERTY LOCATION)
+    foreach (I ${T_PROTO_FILES})
+        execute_process(COMMAND ${proto_binary} -I ${P_PATH} --cpp_out=${P_OUTPUT} ${I}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "[GenerateProtobufMessage] generate ${I} failed. [message=${rc}]")
+        endif ()
+    endforeach ()
+    set(${target}_include ${P_OUTPUT})
+    file(GLOB ${target}_src ${P_OUTPUT}/*.cc)
+    include_directories(${${target}_include})
+endmacro(GenerateProtobufMessage)
