@@ -30,10 +30,9 @@ function(Process)
     AddProject(
             GIT_REPOSITORY https://github.com/scylladb/seastar.git
             OSS_FILE seastar-submodule-${_DEP_VER}.tar.gz
-            #            CONFIGURE_DEFINE --mod=release
             NINJA_EXTRA_DEFINE ${NINJA_DEFINE}
-            #            CONFIGURE
             NINJA
     )
 endfunction(Process)
 Process()
+ProcessAddLibrary()
