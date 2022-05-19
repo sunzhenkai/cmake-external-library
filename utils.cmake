@@ -361,7 +361,7 @@ function(GitClone)
 endfunction()
 
 function(GitCloneV2 repository version)
-    CheckVars(_DEP_NAME _DEP_CUR_DIR)
+    CheckVarsV2(_DEP_NAME _DEP_CUR_DIR)
 
     find_package(Git REQUIRED)
 
@@ -493,7 +493,7 @@ function(CMakeNinjaV2)
         file(MAKE_DIRECTORY ${_DEP_CUR_DIR}/build)
         string(REPLACE ";" "\\;" CMAKE_PREFIX_PATH_STR "${CMAKE_PREFIX_PATH}")
         message(STATUS "Configuring ${_DEP_NAME}, CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}, "
-                "CMAKE_PREFIX_PATH_STR ${CMAKE_PREFIX_PATH_STR}")
+                "CMAKE_PREFIX_PATH_STR ${CMAKE_PREFIX_PATH_STR}, NINJA_EXTRA_DEFINE ${P_NINJA_EXTRA_DEFINE}")
         execute_process(
                 COMMAND ${CMAKE_COMMAND}
                 -G Ninja
@@ -1051,22 +1051,24 @@ macro(AddLibrary MODULE)
     endif ()
     foreach (I IN LISTS ARG_SUBMODULES)
         set(TGT ${MODULE}::${I})
-        add_library(${TGT} STATIC IMPORTED GLOBAL)
-        find_library(add_library_${MODULE}_${I}
-                NAMES lib${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}
-                PATHS ${ARG_PREFIX}
-                PATH_SUFFIXES lib lib64
-                NO_DEFAULT_PATH)
-        message(STATUS "[AddLibrary] TARGET=${TGT} LIB=${add_library_${MODULE}_${I}}")
-        set_target_properties(${TGT} PROPERTIES
-                # IMPORTED_LOCATION "${ARG_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${I}${CMAKE_STATIC_LIBRARY_SUFFIX}"
-                IMPORTED_LOCATION "${add_library_${MODULE}_${I}}"
-                INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
-                INTERFACE_INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
-                # eg. pthread;z
-                INTERFACE_LINK_LIBRARIES "${ARG_LINK_LIBRARIES}"
-                # eg. -pthread
-                INTERFACE_COMPILE_OPTIONS "${ARG_COMPILE_OPTIONS}")
+        if (NOT TARGET ${TGT})
+            add_library(${TGT} STATIC IMPORTED GLOBAL)
+            find_library(add_library_${MODULE}_${I}
+                    NAMES lib${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}
+                    PATHS ${ARG_PREFIX}
+                    PATH_SUFFIXES lib lib64
+                    NO_DEFAULT_PATH)
+            message(STATUS "[AddLibrary] TARGET=${TGT} LIB=${add_library_${MODULE}_${I}}")
+            set_target_properties(${TGT} PROPERTIES
+                    # IMPORTED_LOCATION "${ARG_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${I}${CMAKE_STATIC_LIBRARY_SUFFIX}"
+                    IMPORTED_LOCATION "${add_library_${MODULE}_${I}}"
+                    INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
+                    INTERFACE_INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
+                    # eg. pthread;z
+                    INTERFACE_LINK_LIBRARIES "${ARG_LINK_LIBRARIES}"
+                    # eg. -pthread
+                    INTERFACE_COMPILE_OPTIONS "${ARG_COMPILE_OPTIONS}")
+        endif ()
     endforeach ()
 endmacro(AddLibrary)
 
@@ -1130,18 +1132,19 @@ macro(AddProject)
     cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if (NOT ${_DEP_INSTALL_DONE})
-        if ("${P_GIT_REPOSITORY}" STREQUAL "")
-            if (DEFINED ENV{OSS_URL})
-                set(_DEP_URL $ENV{OSS_URL}/${P_OSS_FILE})
-            else ()
-                set(_DEP_URL https://codeload.github.com/${P_DEP_AUTHOR}/${P_DEP_PROJECT}/tar.gz/refs/tags/${P_DEP_TAG})
-            endif ()
-            message(STATUS "[AddProject] URL=${_DEP_URL}, VERSION=${_DEP_VER}")
+        if (DEFINED ENV{OSS_URL} AND NOT ${P_OSS_FILE} STREQUAL "")
+            set(_DEP_URL $ENV{OSS_URL}/${P_OSS_FILE})
+            message(STATUS "[AddProject] OSS Speed up, URL=${_DEP_URL}, VERSION=${_DEP_VER}")
+            DownloadDepV3(${_DEP_VER} ${_DEP_URL})
+            ExtractDepV2(${_DEP_VER})
+        elseif ("${P_GIT_REPOSITORY}" STREQUAL "")
+            set(_DEP_URL https://codeload.github.com/${P_DEP_AUTHOR}/${P_DEP_PROJECT}/tar.gz/refs/tags/${P_DEP_TAG})
+            message(STATUS "[AddProject] github, URL=${_DEP_URL}, VERSION=${_DEP_VER}")
             DownloadDepV3(${_DEP_VER} ${_DEP_URL})
             ExtractDepV2(${_DEP_VER})
         else ()
-            message(STATUS "[AddProject] GIT=${P_GIT_REPOSITORY}, TAG=${P_GIT_TAG}")
-            GitCloneV2(GIT_TAG)
+            message(STATUS "[AddProject] GIT=${P_GIT_REPOSITORY}, TAG=${_DEP_VER}")
+            GitCloneV2(${P_GIT_REPOSITORY} ${_DEP_VER})
         endif ()
         if (${P_AUTOGEN})
             Autogen()
@@ -1159,7 +1162,7 @@ macro(AddProject)
             MakeInstallV2()
         endif ()
         if (${P_NINJA})
-            CMakeNinjaV2()
+            CMakeNinjaV2(NINJA_EXTRA_DEFINE ${P_NINJA_EXTRA_DEFINE})
             NinjaBuildV2()
             NinjaInstallV2()
         endif ()
