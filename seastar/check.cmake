@@ -25,7 +25,7 @@ function(Process)
             -DProtobuf_USE_STATIC_LIBS=ON
             -DBOOST_ROOT=${BOOST_ROOT}
             -DSeastar_COMPRESS_DEBUG=OFF
-            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo
             -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS})
     AddProject(
             GIT_REPOSITORY https://github.com/scylladb/seastar.git
