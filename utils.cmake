@@ -1108,20 +1108,24 @@ macro(AddExecutables)
 
     foreach (I IN LISTS P_EXECUTABLES)
         set(EXE_TARGET ${P_DEP_NAME}::bin::${I})
-        add_executable(${EXE_TARGET} IMPORTED)
-        find_file(binary_path_${I}
-                NAMES ${I}
-                PATHS ${P_PREFIX}
-                PATH_SUFFIXES bin bin64
-                NO_DEFAULT_PATH)
-        if ("${binary_path_${I}}" STREQUAL "binary_path_${I}-NOTFOUND")
-            message(FATAL_ERROR "[AddExecutables] executable file not found. [name=${I}, prefix=${P_PREFIX}]")
+        if (TARGET ${EXE_TARGET})
+            message(STATUS "[AddExecutables] TARGET=${EXE_TARGET} BINARY=${binary_path_${I}} already added.")
+        else()
+            add_executable(${EXE_TARGET} IMPORTED)
+            find_file(binary_path_${I}
+                    NAMES ${I}
+                    PATHS ${P_PREFIX}
+                    PATH_SUFFIXES bin bin64
+                    NO_DEFAULT_PATH)
+            if ("${binary_path_${I}}" STREQUAL "binary_path_${I}-NOTFOUND")
+                message(FATAL_ERROR "[AddExecutables] executable file not found. [name=${I}, prefix=${P_PREFIX}]")
+            endif ()
+            set_target_properties(${EXE_TARGET} PROPERTIES
+                    IMPORTED_LOCATION "${binary_path_${I}}")
+            message(STATUS "[AddExecutables] TARGET=${EXE_TARGET} BINARY=${binary_path_${I}}")
+            # PrintTargetProperties(${EXE_TARGET})
+            unset(EXE_TARGET)
         endif ()
-        set_target_properties(${EXE_TARGET} PROPERTIES
-                IMPORTED_LOCATION "${binary_path_${I}}")
-        message(STATUS "[AddExecutables] TARGET=${EXE_TARGET} BINARY=${binary_path_${I}}")
-        # PrintTargetProperties(${EXE_TARGET})
-        unset(EXE_TARGET)
     endforeach ()
 endmacro(AddExecutables)
 
