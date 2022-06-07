@@ -1,49 +1,38 @@
-get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
-string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
+function(Process)
+    PrepareDeps(2.0.0 MODULES flatbuffers)
+    AddProject(
+            DEP_AUTHOR google
+            DEP_PROJECT ${_DEP_NAME}
+            DEP_TAG v${_DEP_VER}
+            OSS_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz
+            NINJA)
+endfunction(Process)
+Process()
+ProcessAddLibrary(EXECUTABLES flatc)
 
-# template variables
-set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
-set(_NEED_REBUILD TRUE)
-set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
+macro(GenerateFlatbuffersMessage target)
+    set(options NoneOpt)
+    set(oneValueArgs OUTPUT PATH)
+    set(multiValueArgs FILES)
+    cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-set(_DEP_VER 2.0.0)
-if (DEFINED ENV{OSS_URL})
-    set(_DEP_URL $ENV{OSS_URL}/${_DEP_NAME}-${_DEP_VER}.tar.gz)
-else ()
-    set(_DEP_URL https://codeload.github.com/google/${_DEP_NAME}/tar.gz/refs/tags/v${_DEP_VER})
-endif ()
-
-SetDepPrefix()
-CheckVersion()
-message(STATUS "${_DEP_UNAME}: _NEED_REBUILD=${_NEED_REBUILD}, _DEP_PREFIX=${_DEP_PREFIX}, "
-        "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
-
-if ((${_NEED_REBUILD}) OR (NOT EXISTS ${_DEP_PREFIX}/lib/lib${_DEP_NAME}.a))
-    DownloadDep()
-    ExtractDep()
-    CMakeNinja()
-    NinjaBuild()
-    NinjaInstall()
-endif ()
-
-SetDepPath()
-AppendCMakePrefix()
-find_library(flatbuffers flatbuffers REQUIRED CONFIG)
-
-message(STATUS "find flatbuffers result. [flatbuffers=${flatbuffers}, CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}]")
-
-unset(_DEP_NAME)
-unset(_DEP_UNAME)
-unset(_DEP_VER)
-unset(_DEP_PREFIX)
-unset(_NEED_REBUILD)
-unset(_DEP_CUR_DIR)
-unset(_DEP_BIN_DIR)
-unset(_DEP_LIB_DIR)
-unset(_DEP_INCLUDE_DIR)
-unset(_DEP_NAME_SPACE)
-unset(_DEP_NAME_INSTALL_CHECK)
-unset(_EXTRA_DEFINE)
-unset(_MAKE_BUILD_EXTRA_DEFINE)
-unset(_CMAKE_INSTALL_EXTRA_DEFINE)
-unset(_FIND_STATIC_LIBRARY_EXTRA)
+    file(GLOB T_FB_FILES ${P_FILES})
+    get_property(flatbuffers_binary TARGET flatbuffers::bin::flatc PROPERTY LOCATION)
+    foreach (I ${T_FB_FILES})
+        execute_process(COMMAND ${flatbuffers_binary} --cpp --scoped-enums --reflect-names --gen-object-api
+                -o ${P_OUTPUT} ${I}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "[GenerateFlatbuffersMessage] generate ${I} cpp code failed. [message=${rc}]")
+        endif ()
+        execute_process(COMMAND ${flatbuffers_binary} --binary --schema -o ${P_OUTPUT} ${I}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "[GenerateFlatbuffersMessage] generate ${I} binary failed. [message=${rc}]")
+        endif ()
+    endforeach ()
+    set(${target}_include ${P_OUTPUT})
+    file(GLOB ${target}_src ${P_OUTPUT}/*.h)
+    file(GLOB ${target}_binary ${P_OUTPUT}/*.bfbs)
+    include_directories(${${target}_include})
+endmacro(GenerateFlatbuffersMessage)
