@@ -7,19 +7,21 @@ include(${CMAKE_CURRENT_LIST_DIR}/../protobuf/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../openssl/check.cmake)
 
 function(Process)
-    # 19.06 aa46d84646b381da03dd9126015292686bd078da.
+    # 19.06 aa46d84646b381da03dd9126015292686bd078da
     # 20.05 59f7b32d892191bfae336afcdf6a6d4bd236c183
-    PrepareDeps(1433623962e6abca03dd23ebd1909f9b1a4fce2a MODULES seastar)
+    PrepareDeps(aa46d84646b381da03dd9126015292686bd078da MODULES seastar)
     #    execute_process(
     #            COMMAND env
     #            sudo ./install-dependencies.sh
     #            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
     #            RESULT_VARIABLE rc)
-    set(CMAKE_CXX_FLAGS "-lstdc++fs -Wno-ignored-qualifiers ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-lstdc++fs -Wno-error=ignored-qualifiers ${CMAKE_CXX_FLAGS}")
     set(NINJA_DEFINE -DSeastar_APPS=OFF
             -DSeastar_DEMOS=OFF
             -DSeastar_DOCS=OFF
             -DSeastar_EXCLUDE_TESTS_FROM_ALL=ON
+            -DSeastar_CXX_DIALECT=c++${CMAKE_CXX_STANDARD}
+            -DSeastar_GCC6_CONCEPTS=ON
             -DSeastar_NUMA=OFF
             -DSeastar_HWLOC=OFF
             -DSeastar_STD_OPTIONAL_VARIANT_STRINGVIEW=ON
