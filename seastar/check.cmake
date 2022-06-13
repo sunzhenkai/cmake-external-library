@@ -15,7 +15,7 @@ function(Process)
     #            sudo ./install-dependencies.sh
     #            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
     #            RESULT_VARIABLE rc)
-    set(CMAKE_CXX_FLAGS "-lstdc++fs -Wno-error=ignored-qualifiers ${CMAKE_CXX_FLAGS}")
+    #    set(CMAKE_CXX_FLAGS "-lstdc++fs -Wno-error=ignored-qualifiers ${CMAKE_CXX_FLAGS}")
     set(NINJA_DEFINE -DSeastar_APPS=OFF
             -DSeastar_DEMOS=OFF
             -DSeastar_DOCS=OFF
