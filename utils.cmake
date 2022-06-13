@@ -1073,6 +1073,8 @@ macro(AddLibrary MODULE)
                     INTERFACE_LINK_LIBRARIES "${ARG_LINK_LIBRARIES}"
                     # eg. -pthread
                     INTERFACE_COMPILE_OPTIONS "${ARG_COMPILE_OPTIONS}")
+        else ()
+            message(STATUS "[AddLibrary] target ${TGT} exists, skip.")
         endif ()
     endforeach ()
 endmacro(AddLibrary)
