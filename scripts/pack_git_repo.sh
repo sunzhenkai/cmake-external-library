@@ -12,24 +12,22 @@ EOF
 VERSION=
 TARGET_NAME_VERSION=
 REPO=
+WKD="$BASE/tmp"
 # retrieve version from parameters
-while getopts "r:v:c:t:b:" OPTION; do
+while getopts "r:v:c:t:b:w:" OPTION; do
   case "$OPTION" in
   c)
-    VERSION="$OPTARG"
-    ;;
+    VERSION="$OPTARG";;
   t)
-    VERSION="tags/$OPTARG"
-    ;;
+    VERSION="tags/$OPTARG";;
   b)
-    VERSION="$OPTARG"
-    ;;
+    VERSION="$OPTARG";;
   r)
-    REPO="$OPTARG"
-    ;;
+    REPO="$OPTARG";;
   v)
-    TARGET_NAME_VERSION="$OPTARG"
-    ;;
+    TARGET_NAME_VERSION="$OPTARG";;
+  w)
+    WKD="$OPTARG";;
   *)
     usage
     exit 1
@@ -46,7 +44,6 @@ if [ "X$TARGET_NAME_VERSION" = "X" ] || [ "X$VERSION" = "X" ] || [ "X$REPO" = "X
 fi
 
 # enter work directory
-WKD="$BASE/tmp"
 mkdir -p "$WKD"
 cd "$WKD" || exit 1
 
