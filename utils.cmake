@@ -1143,7 +1143,13 @@ macro(AddProject)
     cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if (NOT ${_DEP_INSTALL_DONE})
-        if (DEFINED ENV{OSS_URL} AND NOT ${P_OSS_FILE} STREQUAL "")
+        # external git repo > speed up url > download git release > clone git repo
+        set(_EXTERNAL_GIT_REPO ${${_DEP_UNAME}_GIT_REPOSITORY})
+        if (DEFINED _EXTERNAL_GIT_REPO AND NOT ${_EXTERNAL_GIT_REPO} STREQUAL "")
+            message(STATUS "[AddProject] use external defined git repo for ${_DEP_NAME}. "
+                    "[GIT_REPOSITORY=${_EXTERNAL_GIT_REPO}, VERSION=${_DEP_VER}]")
+            GitCloneV2(${_EXTERNAL_GIT_REPO} ${_DEP_VER})
+        elseif (DEFINED ENV{OSS_URL} AND NOT ${P_OSS_FILE} STREQUAL "")
             set(_DEP_URL $ENV{OSS_URL}/${P_OSS_FILE})
             message(STATUS "[AddProject] OSS Speed up, URL=${_DEP_URL}, VERSION=${_DEP_VER}")
             DownloadDepV3(${_DEP_VER} ${_DEP_URL})
@@ -1192,7 +1198,7 @@ endmacro(AddProject)
 
 macro(ProcessAddLibrary)
     set(options NoneOpt)
-    set(oneValueArgs NoneOne)
+    set(oneValueArgs COMPILE_OPTIONS LINK_LIBRARIES)
     set(multiValueArgs EXECUTABLES)
     cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -1200,7 +1206,9 @@ macro(ProcessAddLibrary)
         return()
     endif ()
     set(${_DEP_NAME}_ADD_LIBRARY TRUE)
-    AddLibrary(${_DEP_NAME} PREFIX ${_DEP_PREFIX} SUBMODULES ${_DEP_MODULES})
+    AddLibrary(${_DEP_NAME} PREFIX ${_DEP_PREFIX} SUBMODULES ${_DEP_MODULES}
+            COMPILE_OPTIONS ${P_COMPILE_OPTIONS}
+            LINK_LIBRARIES ${P_LINK_LIBRARIES})
     if (P_EXECUTABLES)
         AddExecutables(DEP_NAME ${_DEP_NAME} PREFIX ${_DEP_PREFIX} EXECUTABLES ${P_EXECUTABLES})
     endif ()
