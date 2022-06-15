@@ -52,7 +52,7 @@ set(LIBRARIES
         thrift
         flatbuffers
         snappy
-        brpc
+        incubator-brpc
         curl
         spdlog
         json
