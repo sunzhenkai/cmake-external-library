@@ -52,7 +52,7 @@ function Prepare() {
 
 function Build() {
   docker exec -t -w "/data/build" "${CONTAINER}" /bin/bash \
-    -c "export OSS_URL=\"$OSS_URL\" && cmake3 .. && make -j$(CPUS)"
+    -c "export SPEED_UP_URL=\"$SPEED_UP_URL\" && cmake3 .. && make -j$(CPUS)"
 }
 
 Main() {

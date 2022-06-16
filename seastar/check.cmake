@@ -33,7 +33,7 @@ function(Process)
             -DCMAKE_BUILD_TYPE=RelWithDebInfo)
     AddProject(
             GIT_REPOSITORY https://github.com/scylladb/seastar.git
-            OSS_FILE seastar-submodule-${_DEP_VER}.tar.gz
+            SPEED_UP_FILE seastar-submodule-${_DEP_VER}.tar.gz
             NINJA_EXTRA_DEFINE ${NINJA_DEFINE}
             NINJA)
 endfunction(Process)

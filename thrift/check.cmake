@@ -7,8 +7,8 @@ function(Process)
     PrepareDeps(0.11.0 MODULES thrift thriftz thriftnb)
     AddProject(DEP_AUTHOR apache
             DEP_PROJECT ${_DEP_NAME}
-            DEP_TAG v${_DEP_VER}
-            OSS_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz
+            DEP_TAG ${_DEP_VER}
+            SPEED_UP_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz
             NINJA)
 endfunction(Process)
 Process()

@@ -63,7 +63,7 @@ set(BUILD_EXTERNAL_LIBRARY TRUE)
 # disable build library
 set(BUILD_DPDK FALSE)
 
-message(STATUS "OSS speed up url: $ENV{OSS_URL}")
+message(STATUS "Speed up url: $ENV{SPEED_UP_URL}")
 
 if (${BUILD_EXTERNAL_LIBRARY})
     message(STATUS "build external library")

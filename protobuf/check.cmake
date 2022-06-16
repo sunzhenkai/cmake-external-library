@@ -5,7 +5,7 @@ function(Process)
             DEP_AUTHOR protocolbuffers
             DEP_PROJECT ${_DEP_NAME}
             DEP_TAG v${_DEP_VER}
-            OSS_FILE ${_DEP_NAME}-all-${_DEP_VER}.tar.gz
+            SPEED_UP_FILE ${_DEP_NAME}-all-${_DEP_VER}.tar.gz
             CONFIGURE_DEFINE --enable-shared=no
             AUTOGEN CONFIGURE MAKE INSTALL)
 endfunction(Process)
