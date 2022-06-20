@@ -506,6 +506,7 @@ function(CMakeNinjaV2)
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                 -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
+                -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
                 ${_PIC_FLAG}
                 ${P_NINJA_EXTRA_DEFINE}
                 ${_DEP_CUR_DIR}/src
@@ -639,6 +640,45 @@ function(NinjaInstallV2)
         message(STATUS "Skip ninja install for ${_DEP_NAME}")
     endif ()
 endfunction(NinjaInstallV2)
+
+function(B2Build)
+    CheckVarsV2(_DEP_NAME _DEP_BUILD_DIR _DEP_SRC_DIR)
+    if (NOT ${_DEP_INSTALL_DONE} AND NOT EXISTS ${_DEP_SRC_DIR}/PHASE_B2BUILD)
+        message(STATUS "B2 compile ${_DEP_NAME}. ENV=${P_B2BUILD_ENV}, ARGS=${P_B2BUILD_ARGS}. PATH=$ENV{PATH}")
+        ProcessorCount(cpus)
+        execute_process(
+                COMMAND env CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${P_B2BUILD_ENV}
+                b2 --build-dir=${_DEP_BUILD_DIR} ${P_B2BUILD_ARGS} -j${cpus}
+                WORKING_DIRECTORY ${_DEP_SRC_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "B2 build ${_DEP_NAME} ${rc} - FAIL")
+        endif ()
+        message(STATUS "B2 compile ${_DEP_NAME} - done")
+        file(WRITE ${_DEP_SRC_DIR}/PHASE_B2BUILD "done")
+    endif ()
+endfunction(B2Build)
+
+function(B2Install)
+    CheckVarsV2(_DEP_NAME _DEP_BUILD_DIR)
+    if ("${P_B2INSTALL_SRC_DIR}" STREQUAL "")
+        set(P_B2INSTALL_SRC_DIR ${_DEP_BUILD_DIR})
+    endif ()
+    if (NOT ${_DEP_INSTALL_DONE} AND NOT EXISTS ${P_B2INSTALL_SRC_DIR}/PHASE_B2INSTALL)
+        message(STATUS "B2 install ${_DEP_NAME}. SRC=${P_B2INSTALL_SRC_DIR}, PREFIX=${_DEP_PREFIX}. "
+                "ENV=${P_B2INSTALL_ENV}, ARGS=${P_B2INSTALL_ARGS}")
+        execute_process(
+                COMMAND env CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${P_B2INSTALL_ENV}
+                b2 --prefix=${_DEP_PREFIX} ${P_B2INSTALL_ARGS} install
+                WORKING_DIRECTORY ${P_B2INSTALL_SRC_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "B2 install ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "B2 install ${_DEP_NAME} - done")
+        file(WRITE ${P_B2INSTALL_SRC_DIR}/PHASE_B2INSTALL "done")
+    endif ()
+endfunction(B2Install)
 
 function(Autogen)
     set(_VARS _DEP_NAME _DEP_CUR_DIR)
@@ -960,6 +1000,28 @@ function(Bootstrap)
     endif ()
 endfunction()
 
+function(BootstrapV2)
+    CheckVarsV2(_DEP_NAME _DEP_SRC_DIR)
+    if ("${P_BOOTSTRAP_SRC_DIR}" STREQUAL "")
+        set(P_BOOTSTRAP_SRC_DIR ${_DEP_SRC_DIR})
+    endif ()
+    if (NOT ${_DEP_INSTALL_DONE} AND NOT EXISTS ${P_BOOTSTRAP_SRC_DIR}/PHASE_BOOTSTRAP)
+        message(STATUS "Bootstrap ${_DEP_NAME}. SRC=${P_BOOTSTRAP_SRC_DIR}. "
+                "ENV=${P_BOOTSTRAP_ENV}, ARGS=${P_BOOTSTRAP_ARGS}. "
+                "CC=${CMAKE_C_COMPILER}, CXX=${CMAKE_CXX_COMPILER}.")
+        execute_process(
+                COMMAND env CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${P_BOOTSTRAP_ENV}
+                ./bootstrap.sh ${P_BOOTSTRAP_ARGS}
+                WORKING_DIRECTORY ${P_BOOTSTRAP_SRC_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Bootstrap ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Bootstrap ${_DEP_NAME} - done")
+        file(WRITE ${P_BOOTSTRAP_SRC_DIR}/PHASE_BOOTSTRAP "done")
+    endif ()
+endfunction()
+
 macro(SetExternalVars)
     CheckVarsV2(_EXTERNAL_VARS)
     foreach (_V IN LISTS _EXTERNAL_VARS)
@@ -990,6 +1052,8 @@ macro(PrepareDeps version)
     get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
     string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
     set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
+    set(_DEP_BUILD_DIR ${_DEP_CUR_DIR}/build)
+    set(_DEP_SRC_DIR ${_DEP_CUR_DIR}/src)
     set(_NEED_REBUILD TRUE)
     set(_EXTERNAL_VARS)
     if (DEFINED ${_DEP_UNAME}_VERSION)
@@ -1137,9 +1201,11 @@ macro(AddExecutables)
 endmacro(AddExecutables)
 
 macro(AddProject)
-    set(options MAKE INSTALL NINJA AUTO_RE_CONF CONFIGURE AUTOGEN)
-    set(oneValueArgs GIT_REPOSITORY GIT_TAG DEP_AUTHOR DEP_PROJECT DEP_TAG SPEED_UP_FILE DEP_URL)
-    set(multiValueArgs CONFIGURE_DEFINE NINJA_EXTRA_DEFINE BOOSTRAP)
+    set(options MAKE INSTALL NINJA AUTO_RE_CONF CONFIGURE AUTOGEN BOOTSTRAP B2BUILD B2INSTALL)
+    set(oneValueArgs GIT_REPOSITORY GIT_TAG DEP_AUTHOR DEP_PROJECT DEP_TAG SPEED_UP_FILE DEP_URL
+            BOOTSTRAP_SRC_DIR B2INSTALL_SRC_DIR)
+    set(multiValueArgs CONFIGURE_DEFINE NINJA_EXTRA_DEFINE BOOTSTRAP_ENV BOOTSTRAP_ARGS B2BUILD_ENV B2BUILD_ARGS
+            B2INSTALL_ENV B2INSTALL_ARGS)
     cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if (NOT ${_DEP_INSTALL_DONE})
@@ -1159,12 +1225,12 @@ macro(AddProject)
             message(STATUS "[AddProject] download deps. [URL=${_DEP_URL}, VERSION=${_DEP_VER}]")
             DownloadDepV3(${_DEP_VER} ${_DEP_URL})
             ExtractDepV2(${_DEP_VER})
-        elseif ("${P_GIT_REPOSITORY}" STREQUAL "")
+        elseif ("${P_GIT_REPOSITORY}" STREQUAL "" AND NOT "${P_DEP_PROJECT}" STREQUAL "")
             set(_DEP_URL https://codeload.github.com/${P_DEP_AUTHOR}/${P_DEP_PROJECT}/tar.gz/refs/tags/${P_DEP_TAG})
             message(STATUS "[AddProject] github, URL=${_DEP_URL}, VERSION=${_DEP_VER}")
             DownloadDepV3(${_DEP_VER} ${_DEP_URL})
             ExtractDepV2(${_DEP_VER})
-        else ()
+        elseif (NOT "${P_GIT_REPOSITORY}" STREQUAL "")
             message(STATUS "[AddProject] GIT=${P_GIT_REPOSITORY}, TAG=${_DEP_VER}")
             GitCloneV2(${P_GIT_REPOSITORY} ${_DEP_VER})
         endif ()
@@ -1187,6 +1253,15 @@ macro(AddProject)
             CMakeNinjaV2(NINJA_EXTRA_DEFINE ${P_NINJA_EXTRA_DEFINE})
             NinjaBuildV2()
             NinjaInstallV2()
+        endif ()
+        if (${P_BOOTSTRAP})
+            BootstrapV2()
+        endif ()
+        if (${P_B2BUILD})
+            B2Build()
+        endif ()
+        if (${P_B2INSTALL})
+            B2Install()
         endif ()
     endif ()
 
