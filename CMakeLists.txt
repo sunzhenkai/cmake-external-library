@@ -33,7 +33,7 @@ MARK_AS_ADVANCED(
 #SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS})
 #SET(CMAKE_CXX_FLAGS_RELEASE "-fPIC -w -g -pthread -O2 -std=gnu++17 -fno-omit-frame-pointer")
 
-include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
+#include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 set(CHECK_FILE "check.cmake")
 set(LIBRARIES
         fmt
@@ -41,27 +41,28 @@ set(LIBRARIES
         boost
         yaml-cpp
         openssl
-        cryptopp
-        c-ares
-        lz4
+        #        cryptopp
+        #        c-ares
+        #        lz4
         #        valgrind
-        seastar
-        gflags
-        leveldb
-        libevent
-        thrift
-        flatbuffers
-        snappy
-        incubator-brpc
-        curl
-        spdlog
-        json
+        #        seastar
+        #        gflags
+        #        leveldb
+        #        libevent
+        #        thrift
+        #        flatbuffers
+        #        snappy
+        #        incubator-brpc
+        #        curl
+        #        spdlog
+        #        json
         )
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)
 
 # disable build library
 set(BUILD_DPDK FALSE)
+#set(CMAKE_CXX_STANDARD 17)
 
 message(STATUS "Speed up url: $ENV{SPEED_UP_URL}")
 

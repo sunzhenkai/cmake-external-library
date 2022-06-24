@@ -13,7 +13,9 @@ endfunction(SetDepPrefix)
 macro(CheckLibraryInstall)
     list(GET _DEP_MODULES 0 _FIRST_DEP_MODULE)
     FindLibrary(install_library_${_DEP_NAME} ${_FIRST_DEP_MODULE} ${_DEP_PREFIX})
-    set(_DEP_INSTALLED_LIBRARY ${install_library_${_DEP_NAME}})
+    if (NOT install_library_${_DEP_NAME} STREQUAL "install_library_${_DEP_NAME}-NOTFOUND")
+        set(_DEP_INSTALLED_LIBRARY ${install_library_${_DEP_NAME}})
+    endif ()
 endmacro(CheckLibraryInstall)
 
 macro(SetTemplateVariable version)
@@ -114,8 +116,16 @@ macro(PrepareDep version)
 endmacro(PrepareDep)
 
 function(DownloadDep)
-    set(ARGS GIT_REPOSITORY GIT_TAG DEP_AUTHOR DEP_PROJECT DEP_TAG SPEED_UP_FILE DEP_URL)
-    cmake_parse_arguments(ARG "" "${ARGS}" "" ${ARGN})
+    set(ARG GIT_REPOSITORY AUTHOR PROJECT TAG SPEED_UP_FILE DEP_URL)
+    cmake_parse_arguments(ARG "" "${ARG}" "" ${ARGN})
+
+    if (NOT ARG_PROJECT)
+        set(ARG_PROJECT ${_DEP_NAME})
+    endif ()
+
+    if (NOT ARG_TAG)
+        set(ARG_TAG ${_DEP_VER})
+    endif ()
 
     if (DEFINED ENV{SPEED_UP_URL} AND ARG_SPEED_UP_FILE)
         set(_DEP_URL $ENV{SPEED_UP_URL}/${ARG_SPEED_UP_FILE})
@@ -130,8 +140,8 @@ function(DownloadDep)
     elseif (_DEP_URL)
         DoDownloadDep(${_DEP_NAME} ${_DEP_PACKAGE_DIR} ${_DEP_VER} ${_DEP_URL})
         ExtractDep(${_DEP_NAME} ${_DEP_SRC_DIR} ${_DEP_PACKAGE_DIR} ${_DEP_VER})
-    elseif (NOT ARG_GIT_REPOSITORY AND ARG_DEP_PROJECT)
-        set(_DEP_URL https://codeload.github.com/${ARG_DEP_AUTHOR}/${ARG_DEP_PROJECT}/tar.gz/refs/tags/${ARG_DEP_TAG})
+    elseif (NOT ARG_GIT_REPOSITORY AND ARG_PROJECT)
+        set(_DEP_URL https://codeload.github.com/${ARG_AUTHOR}/${ARG_PROJECT}/tar.gz/refs/tags/${ARG_TAG})
         DoDownloadDep(${_DEP_NAME} ${_DEP_PACKAGE_DIR} ${_DEP_VER} ${_DEP_URL})
         ExtractDep(${_DEP_NAME} ${_DEP_SRC_DIR} ${_DEP_PACKAGE_DIR} ${_DEP_VER})
     elseif (ARG_GIT_REPOSITORY)
@@ -145,6 +155,8 @@ macro(SetSrc)
     else ()
         set(SRC ${_DEP_SRC_DIR})
     endif ()
+
+    set(BUILD ${_DEP_BUILD_DIR})
 endmacro(SetSrc)
 
 macro(CheckDest)
@@ -218,6 +230,206 @@ function(B2Install)
     endif ()
 endfunction(B2Install)
 
+function(CMakeNinja)
+    if (ARG_PIC_OFF)
+        set(_PIC_FLAG "-DCMAKE_POSITION_INDEPENDENT_CODE=OFF")
+    else ()
+        set(_PIC_FLAG "-DCMAKE_POSITION_INDEPENDENT_CODE=ON")
+    endif ()
+
+    if (ARG_BUILD_TYPE)
+        set(_BUILD_TYPE ${ARG_BUILD_TYPE})
+    else ()
+        set(_BUILD_TYPE Release)
+    endif ()
+
+    if (NOT CMAKE_CXX_STANDARD)
+        set(CMAKE_CXX_STANDARD 17)
+    endif ()
+
+    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${SRC}/PHASE_CMAKE_NINJA)
+        file(MAKE_DIRECTORY ${BUILD})
+        string(REPLACE ";" "\\;" CMAKE_PREFIX_PATH_STR "${CMAKE_PREFIX_PATH}")
+        message(STATUS "Configuring ${_DEP_NAME}. CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH} "
+                "CMAKE_PREFIX_PATH_STR=${CMAKE_PREFIX_PATH_STR} NINJA_EXTRA_DEFINE=${P_NINJA_EXTRA_DEFINE}")
+        execute_process(
+                COMMAND ${CMAKE_COMMAND}
+                -G Ninja
+                -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+                -DCMAKE_BUILD_TYPE=${_BUILD_TYPE}
+                -DCMAKE_INSTALL_PREFIX=${_DEP_PREFIX}
+                -DBUILD_SHARED_LIBS=OFF
+                -DCMAKE_INSTALL_LIBDIR=lib
+                -DCMAKE_INSTALL_BINDIR=bin
+                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_STR}
+                -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
+                ${_PIC_FLAG}
+                ${ARG_ARGS}
+                ${SRC}
+                WORKING_DIRECTORY ${BUILD}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Configuring ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Configuring ${_DEP_NAME} - done")
+        file(WRITE ${SRC}/PHASE_CMAKE_NINJA "done")
+    endif ()
+endfunction(CMakeNinja)
+
+function(NinjaBuild)
+    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${SRC}/PHASE_NINJA_BUILD)
+        message(STATUS "Building ${_DEP_NAME}")
+        execute_process(
+                COMMAND ninja
+                WORKING_DIRECTORY ${BUILD}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Building ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Building ${_DEP_NAME} - done")
+    endif ()
+    file(WRITE ${SRC}/PHASE_NINJA_BUILD "done")
+endfunction(NinjaBuild)
+
+function(NinjaInstall)
+    if (ARG_WITH_ROOT)
+        set(_PERMISSION_ROLE "sudo")
+    endif ()
+
+    if (NOT _DEP_INSTALLED_LIBRARY)
+        message(STATUS "Installing ${_DEP_NAME}")
+        execute_process(
+                COMMAND ${_PERMISSION_ROLE} ninja install
+                WORKING_DIRECTORY ${BUILD}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Installing ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Installing ${_DEP_NAME} - done")
+    endif ()
+endfunction(NinjaInstall)
+
+function(Ninja)
+    cmake_parse_arguments(ARG "PIC_OFF;WITH_ROOT" "SRC;BUILD_TYPE" "ARGS" ${ARGN})
+    SetSrc()
+    CMakeNinja()
+    NinjaBuild()
+    NinjaInstall()
+endfunction(Ninja)
+
+function(Autogen)
+    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${_DEP_SRC_DIR}/PHASE_AUTOGEN)
+        message(STATUS "Autogen ${_DEP_NAME}")
+        execute_process(
+                COMMAND env
+                CC=${CMAKE_C_COMPILER}
+                CXX=${CMAKE_CXX_COMPILER}
+                CFLAGS=-fPIC
+                CXXFLAGS=-fPIC
+                ./autogen.sh
+                WORKING_DIRECTORY ${_DEP_SRC_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Autogen ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Autogen ${_DEP_NAME} - done")
+        file(WRITE ${_DEP_SRC_DIR}/PHASE_AUTOGEN "done")
+    endif ()
+endfunction()
+
+function(Configure)
+    cmake_parse_arguments(ARG "" "CONFIGURE_COMMAND" "ARGS" ${ARGN})
+    if (EXISTS ${_DEP_SRC_DIR}/configure)
+        set(CONFIG_CMD configure)
+    elseif (EXISTS ${_DEP_SRC_DIR}/config)
+        set(CONFIG_CMD config)
+    elseif (EXISTS ${_DEP_SRC_DIR}/configure.sh)
+        set(CONFIG_CMD configure.sh)
+    endif ()
+
+    if (NOT ARG_CONFIGURE_COMMAND)
+        set(CONFIGURE_COMMAND ${CONFIG_CMD} --prefix=${_DEP_PREFIX})
+    endif ()
+
+    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${_DEP_SRC_DIR}/PHASE_CONFIGURE)
+        message(STATUS "Configuring ${_DEP_NAME} with command ${CONFIGURE_COMMAND} ARGS=${ARG_ARGS}")
+        execute_process(
+                COMMAND env
+                CC=${CMAKE_C_COMPILER}
+                CXX=${CMAKE_CXX_COMPILER}
+                CFLAGS=-fPIC
+                CXXFLAGS=-fPIC
+                ./${CONFIGURE_COMMAND} ${ARG_ARGS}
+                WORKING_DIRECTORY ${_DEP_SRC_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Configuring ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Configuring ${_DEP_NAME} - done")
+        file(WRITE ${_DEP_SRC_DIR}/PHASE_CONFIGURE "done")
+    endif ()
+endfunction(Configure)
+
+function(MakeBuild)
+    if (EXISTS ${_DEP_BUILD_DIR})
+        set(_WORK_DIR ${_DEP_BUILD_DIR})
+    else ()
+        set(_WORK_DIR ${_DEP_SRC_DIR})
+    endif ()
+
+    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${_DEP_SRC_DIR}/PHASE_MAKE_BUILD)
+        message(STATUS "Building ${_DEP_NAME}")
+        include(ProcessorCount)
+        ProcessorCount(cpus)
+        execute_process(
+                COMMAND env
+                CC=${CMAKE_C_COMPILER}
+                CXX=${CMAKE_CXX_COMPILER}
+                make
+                PREFIX=${_DEP_PREFIX}
+                -j${cpus}
+                ${_MAKE_BUILD_EXTRA_DEFINE}
+                WORKING_DIRECTORY ${_WORK_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Building ${_DEP_NAME} - FAIL WORK_DIR=${_WORK_DIR}")
+        endif ()
+        message(STATUS "Building ${_DEP_NAME} - done")
+        file(WRITE ${_DEP_SRC_DIR}/PHASE_MAKE_BUILD "done")
+    endif ()
+endfunction(MakeBuild)
+
+function(MakeInstall)
+    cmake_parse_arguments(ARG "" "" "ARGS" ${ARGN})
+
+    if (EXISTS ${_DEP_BUILD_DIR})
+        set(_WORK_DIR ${_DEP_BUILD_DIR})
+    else ()
+        set(_WORK_DIR ${_DEP_SRC_DIR})
+    endif ()
+
+    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${_DEP_SRC_DIR}/PHASE_MAKE_INSTALL)
+        message(STATUS "Installing ${_DEP_NAME}")
+        execute_process(
+                COMMAND env
+                CC=${CMAKE_C_COMPILER}
+                CXX=${CMAKE_CXX_COMPILER}
+                make
+                install
+                PREFIX=${_DEP_PREFIX}
+                ${ARG_ARGS}
+                WORKING_DIRECTORY ${_WORK_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Installing ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Installing ${_DEP_NAME} - done")
+    endif ()
+    file(WRITE ${_DEP_SRC_DIR}/PHASE_MAKE_INSTALL "done")
+endfunction(MakeInstall)
+
 macro(SetExternalVars)
     foreach (_V IN LISTS _EXTERNAL_VARS)
         set(${_V} ${${_V}} PARENT_SCOPE)
@@ -234,3 +446,85 @@ macro(PostProcess)
 
     SetExternalVars()
 endmacro(PostProcess)
+
+macro(AddLibrary MODULE)
+    set(ARGS PREFIX LINK_LIBRARIES COMPILE_OPTIONS)
+    cmake_parse_arguments(ARG "" "${ARGS}" "SUBMODULES" ${ARGN})
+
+    if (NOT ARG_PREFIX)
+        message(FATAL_ERROR "PREFIX should not be empty")
+    endif ()
+
+    foreach (I IN LISTS ARG_SUBMODULES)
+        set(TGT ${MODULE}::${I})
+        if (NOT TARGET ${TGT})
+            add_library(${TGT} STATIC IMPORTED GLOBAL)
+            find_library(add_library_${MODULE}_${I}
+                    NAMES lib${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}
+                    PATHS ${ARG_PREFIX}
+                    PATH_SUFFIXES lib lib64
+                    NO_DEFAULT_PATH)
+            message(STATUS "[AddLibrary] TARGET=${TGT} LIB=${add_library_${MODULE}_${I}}")
+            set_target_properties(${TGT} PROPERTIES
+                    # IMPORTED_LOCATION "${ARG_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${I}${CMAKE_STATIC_LIBRARY_SUFFIX}"
+                    IMPORTED_LOCATION "${add_library_${MODULE}_${I}}"
+                    INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
+                    INTERFACE_INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
+                    # i.e. pthread;z
+                    INTERFACE_LINK_LIBRARIES "${ARG_LINK_LIBRARIES}"
+                    # i.e. -pthread
+                    INTERFACE_COMPILE_OPTIONS "${ARG_COMPILE_OPTIONS}")
+        else ()
+            message(STATUS "[AddLibrary] target ${TGT} exists, skip.")
+        endif ()
+    endforeach ()
+endmacro(AddLibrary)
+
+macro(AddExecutables)
+    cmake_parse_arguments(ARG "" "DEP_NAME;PREFIX" "EXECUTABLES" ${ARGN})
+
+    foreach (I IN LISTS ARG_EXECUTABLES)
+        set(EXE_TARGET ${ARG_DEP_NAME}::bin::${I})
+        if (NOT TARGET ${EXE_TARGET})
+            add_executable(${EXE_TARGET} IMPORTED)
+            find_file(binary_path_${I}
+                    NAMES ${I}
+                    PATHS ${ARG_PREFIX}
+                    PATH_SUFFIXES bin bin64
+                    NO_DEFAULT_PATH)
+            if ("${binary_path_${I}}" STREQUAL "binary_path_${I}-NOTFOUND")
+                message(FATAL_ERROR "[AddExecutables] executable file not found. [name=${I}, prefix=${ARG_PREFIX}]")
+            endif ()
+            set_target_properties(${EXE_TARGET} PROPERTIES
+                    IMPORTED_LOCATION "${binary_path_${I}}")
+            message(STATUS "[AddExecutables] TARGET=${EXE_TARGET} BINARY=${binary_path_${I}}")
+            unset(EXE_TARGET)
+        endif ()
+    endforeach ()
+endmacro(AddExecutables)
+
+macro(UnsetExternalVars)
+    unset(_DEP_NAME)
+    unset(_DEP_PREFIX)
+    unset(_DEP_MODULES)
+endmacro(UnsetExternalVars)
+
+macro(ProcessAddLibrary)
+    set(ARGS COMPILE_OPTIONS LINK_LIBRARIES)
+    set(MULTI_ARGS EXECUTABLES)
+    cmake_parse_arguments(ARG "" "${ARGS}" "${MULTI_ARGS}" ${ARGN})
+
+    if (DEFINED ${_DEP_NAME}_ADD_LIBRARY)
+        return()
+    endif ()
+    set(${_DEP_NAME}_ADD_LIBRARY TRUE)
+    AddLibrary(${_DEP_NAME}
+            PREFIX ${_DEP_PREFIX}
+            SUBMODULES ${_DEP_MODULES}
+            COMPILE_OPTIONS ${ARG_COMPILE_OPTIONS}
+            LINK_LIBRARIES ${ARG_LINK_LIBRARIES})
+    if (ARG_EXECUTABLES)
+        AddExecutables(DEP_NAME ${_DEP_NAME} PREFIX ${_DEP_PREFIX} EXECUTABLES ${ARG_EXECUTABLES})
+    endif ()
+    UnsetExternalVars()
+endmacro(ProcessAddLibrary)

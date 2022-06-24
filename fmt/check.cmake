@@ -1,11 +1,10 @@
+include(${CMAKE_CURRENT_LIST_DIR}/../check.cmake)
+
 function(Process)
-    PrepareDeps(5.3.0 MODULES fmt)
-    AddProject(
-            DEP_AUTHOR fmtlib
-            DEP_PROJECT ${_DEP_NAME}
-            DEP_TAG v${_DEP_VER}
-            SPEED_UP_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz
-            NINJA)
+    PrepareDep(5.3.0 MODULES fmt)
+    DownloadDep(AUTHOR fmtlib SPEED_UP_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz)
+    Ninja()
+    PostProcess()
 endfunction(Process)
 Process()
 ProcessAddLibrary()

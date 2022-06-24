@@ -15,10 +15,11 @@ function(Process)
     B2Install(SRC ${B2DIR} ARGS --with-toolset=cc ENV PATH=${B2DIR}:$ENV{PATH} DEST bin/b2)
     B2Build(ENV PATH=${_DEP_PREFIX}/bin:$ENV{PATH} ARGS ${ARGS})
     B2Install(ENV PATH=${_DEP_PREFIX}/bin:$ENV{PATH} ARGS ${ARGS})
-    
+
     set(BOOST_ROOT ${_DEP_PREFIX} PARENT_SCOPE)
     PostProcess()
 endfunction(Process)
 Process()
+UnsetExternalVars()
 set(Boost_NO_SYSTEM_PATHS ON)
 find_package(Boost 1.76 COMPONENTS ALL)

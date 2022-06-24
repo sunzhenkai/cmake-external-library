@@ -62,7 +62,6 @@ function(GitClone name source repository version)
     message(STATUS "Checking out ${name}: ${version} - done")
 endfunction(GitClone)
 
-
 function(DoDownloadDep name destination version url)
     if (NOT EXISTS ${destination}/${name}-${version}.tar.gz)
         file(MAKE_DIRECTORY ${destination})
@@ -97,3 +96,14 @@ function(ExtractDep name source package version)
         message(STATUS "Extracting ${name} - done")
     endif ()
 endfunction(ExtractDep)
+
+macro(DoUnset)
+    cmake_parse_arguments(ARG "" "" "TARGETS" ${ARGN})
+
+    foreach (TGT IN LISTS ARG_TARGETS)
+        unset(${TGT})
+    endforeach ()
+
+    unset(TGT)
+    unset(ARG_TARGETS)
+endmacro(DoUnset)
