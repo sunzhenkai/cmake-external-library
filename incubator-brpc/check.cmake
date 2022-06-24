@@ -1,3 +1,4 @@
+include(${CMAKE_CURRENT_LIST_DIR}/../check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../gflags/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../leveldb/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../thrift/check.cmake)
@@ -5,13 +6,9 @@ include(${CMAKE_CURRENT_LIST_DIR}/../boost/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../snappy/check.cmake)
 
 function(Process)
-    PrepareDeps(1.1.0 MODULES brpc)
-    AddProject(
-            DEP_AUTHOR apache
-            DEP_PROJECT ${_DEP_NAME}
-            DEP_TAG v${_DEP_VER}
-            SPEED_UP_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz
-            NINJA)
+    PrepareDep(s.1.0.2 MODULES brpc GIT_REPOSITORY https://github.com/sunzhenkai/incubator-brpc.git)
+    DownloadDep(AUTHOR sunzhenkai TAG ${_DEP_VER} SPEED_UP_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz)
+    Ninja()
 endfunction(Process)
 Process()
 ProcessAddLibrary()

@@ -28,5 +28,5 @@ macro(GenerateProtobufMessage target)
     file(GLOB ${target}_src ${ARG_OUTPUT}/*.cc)
     include_directories(${${target}_include})
 
-    DoUnset(TARGETS ARG_OUTPUT ARG_PATH ARG_FILES proto_binary)
+    DoUnset(TARGETS T_PROTO_FILES ARG_OUTPUT ARG_PATH ARG_FILES proto_binary)
 endmacro(GenerateProtobufMessage)

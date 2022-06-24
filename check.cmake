@@ -12,7 +12,11 @@ endfunction(SetDepPrefix)
 
 macro(CheckLibraryInstall)
     list(GET _DEP_MODULES 0 _FIRST_DEP_MODULE)
-    FindLibrary(install_library_${_DEP_NAME} ${_FIRST_DEP_MODULE} ${_DEP_PREFIX})
+    if (ARG_FIND_BY_HEADER)
+        FindHeader(install_library_${_DEP_NAME} ${_FIRST_DEP_MODULE} ${_DEP_PREFIX} ${ARG_FIND_SUFFIX})
+    else ()
+        FindLibrary(install_library_${_DEP_NAME} ${_FIRST_DEP_MODULE} ${_DEP_PREFIX})
+    endif ()
     if (NOT install_library_${_DEP_NAME} STREQUAL "install_library_${_DEP_NAME}-NOTFOUND")
         set(_DEP_INSTALLED_LIBRARY ${install_library_${_DEP_NAME}})
     endif ()
@@ -23,8 +27,12 @@ macro(SetTemplateVariable version)
     # _DEP_CUR_DIR _DEP_PREFIX _DEP_BUILD_DIR _DEP_SRC_DIR _DEP_PACKAGE_DIR
     # _NEED_REBUILD _DEP_INSTALLED_LIBRARY
 
-    if (NOT DEFINED _DEP_NAME)
-        get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
+    get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
+
+    if (${_DEP_NAME}_ADDED)
+        return()
+    else ()
+        set(${_DEP_NAME}_ADDED TRUE PARENT_SCOPE)
     endif ()
 
     string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
@@ -39,7 +47,11 @@ macro(SetTemplateVariable version)
     else ()
         set(_DEP_VER ${version})
     endif ()
-    set(_DEP_MODULES ${ARG_MODULES})
+    if (ARG_MODULES)
+        set(_DEP_MODULES ${ARG_MODULES})
+    else ()
+        set(_DEP_MODULES ${_DEP_NAME})
+    endif ()
     string(REPLACE "." "_" _DEP_VER_ "${_DEP_VER}")
     SetDepPrefix(${_DEP_NAME} ${_DEP_UNAME} ${_DEP_CUR_DIR})
     CheckLibraryInstall()
@@ -70,14 +82,13 @@ function(WriteVersion version prefix)
     file(WRITE ${prefix}/VERSION ${version})
 endfunction()
 
-function(AppendCMakePrefix)
+macro(AppendCMakePrefix)
     list(FIND CMAKE_PREFIX_PATH ${_DEP_PREFIX} _DEP_INDEX)
     if (_DEP_INDEX EQUAL -1)
         list(APPEND CMAKE_PREFIX_PATH ${_DEP_PREFIX})
         set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
-        list(APPEND _EXTERNAL_VARS CMAKE_PREFIX_PATH)
     endif ()
-endfunction(AppendCMakePrefix)
+endmacro(AppendCMakePrefix)
 
 function(AppendPkgConfig)
     if (EXISTS ${_DEP_PREFIX}/lib/pkgconfig/)
@@ -106,10 +117,7 @@ function(CheckVersion version source prefix)
 endfunction(CheckVersion)
 
 macro(PrepareDep version)
-    set(options FindByHeader)
-    set(oneValueArgs NoneOneArgs)
-    set(multiValueArgs MODULES FindPathSuffix)
-    cmake_parse_arguments(ARG ${options} ${oneValueArgs} ${multiValueArgs} ${ARGN})
+    cmake_parse_arguments(ARG "FIND_BY_HEADER" "" "MODULES;FIND_SUFFIX" ${ARGN})
 
     SetTemplateVariable(${version})
     CheckVersion(${_DEP_VER} ${_DEP_SRC_DIR} ${_DEP_PREFIX})
@@ -121,6 +129,10 @@ function(DownloadDep)
 
     if (NOT ARG_PROJECT)
         set(ARG_PROJECT ${_DEP_NAME})
+    endif ()
+
+    if (NOT ARG_AUTHOR)
+        set(ARG_AUTHOR ${_DEP_NAME})
     endif ()
 
     if (NOT ARG_TAG)
@@ -240,7 +252,7 @@ function(CMakeNinja)
     if (ARG_BUILD_TYPE)
         set(_BUILD_TYPE ${ARG_BUILD_TYPE})
     else ()
-        set(_BUILD_TYPE Release)
+        set(_BUILD_TYPE ${CMAKE_BUILD_TYPE})
     endif ()
 
     if (NOT CMAKE_CXX_STANDARD)
@@ -373,6 +385,7 @@ function(Configure)
 endfunction(Configure)
 
 function(MakeBuild)
+    cmake_parse_arguments(ARG "" "" "ARGS" ${ARGN})
     if (EXISTS ${_DEP_BUILD_DIR})
         set(_WORK_DIR ${_DEP_BUILD_DIR})
     else ()
@@ -390,7 +403,7 @@ function(MakeBuild)
                 make
                 PREFIX=${_DEP_PREFIX}
                 -j${cpus}
-                ${_MAKE_BUILD_EXTRA_DEFINE}
+                ${ARG_ARGS}
                 WORKING_DIRECTORY ${_WORK_DIR}
                 RESULT_VARIABLE rc)
         if (NOT "${rc}" STREQUAL "0")
@@ -430,10 +443,45 @@ function(MakeInstall)
     file(WRITE ${_DEP_SRC_DIR}/PHASE_MAKE_INSTALL "done")
 endfunction(MakeInstall)
 
+function(BuildConf)
+    cmake_parse_arguments(ARG "" "" "ENV;ARGS" ${ARGN})
+    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${_DEP_SRC_DIR}/PHASE_BUILD_CONF)
+        execute_process(
+                COMMAND env ${ARG_ENV}
+                ./buildconf
+                ${ARG_ARGS}
+                WORKING_DIRECTORY ${_DEP_SRC_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Build config ${_DEP_NAME} - FAIL")
+        else ()
+            message(STATUS "Build config ${_DEP_NAME} - done")
+        endif ()
+        file(WRITE ${_DEP_SRC_DIR}/PHASE_BUILD_CONF "done")
+    endif ()
+endfunction()
+
+function(AutoReconf)
+    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${_DEP_SRC_DIR}/PHASE_AUTO_RECONF)
+        execute_process(
+                COMMAND env
+                autoreconf -fi
+                WORKING_DIRECTORY ${_DEP_SRC_DIR}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Auto reconf ${_DEP_NAME} - FAIL")
+        else ()
+            message(STATUS "Auto reconf ${_DEP_NAME} - done")
+        endif ()
+        file(WRITE ${_DEP_SRC_DIR}/PHASE_AUTO_RECONF "done")
+    endif ()
+endfunction()
+
 macro(SetExternalVars)
     foreach (_V IN LISTS _EXTERNAL_VARS)
         set(${_V} ${${_V}} PARENT_SCOPE)
     endforeach ()
+    set(_EXTERNAL_VARS ${_EXTERNAL_VARS} PARENT_SCOPE)
 endmacro(SetExternalVars)
 
 macro(PostProcess)
@@ -504,9 +552,10 @@ macro(AddExecutables)
 endmacro(AddExecutables)
 
 macro(UnsetExternalVars)
-    unset(_DEP_NAME)
-    unset(_DEP_PREFIX)
-    unset(_DEP_MODULES)
+    foreach (_I IN LISTS _EXTERNAL_VARS)
+        unset(${_I})
+    endforeach ()
+    unset(_I)
 endmacro(UnsetExternalVars)
 
 macro(ProcessAddLibrary)
@@ -514,17 +563,30 @@ macro(ProcessAddLibrary)
     set(MULTI_ARGS EXECUTABLES)
     cmake_parse_arguments(ARG "" "${ARGS}" "${MULTI_ARGS}" ${ARGN})
 
-    if (DEFINED ${_DEP_NAME}_ADD_LIBRARY)
+    if (NOT _DEP_NAME OR ${_DEP_NAME}_ADDED_LIBRARY)
+        UnsetExternalVars()
         return()
+    else ()
+        set(${_DEP_NAME}_ADDED_LIBRARY TRUE)
+        AddLibrary(${_DEP_NAME}
+                PREFIX ${_DEP_PREFIX}
+                SUBMODULES ${_DEP_MODULES}
+                COMPILE_OPTIONS ${ARG_COMPILE_OPTIONS}
+                LINK_LIBRARIES ${ARG_LINK_LIBRARIES})
+        if (ARG_EXECUTABLES)
+            AddExecutables(DEP_NAME ${_DEP_NAME} PREFIX ${_DEP_PREFIX} EXECUTABLES ${ARG_EXECUTABLES})
+        endif ()
+        UnsetExternalVars()
     endif ()
-    set(${_DEP_NAME}_ADD_LIBRARY TRUE)
-    AddLibrary(${_DEP_NAME}
-            PREFIX ${_DEP_PREFIX}
-            SUBMODULES ${_DEP_MODULES}
-            COMPILE_OPTIONS ${ARG_COMPILE_OPTIONS}
-            LINK_LIBRARIES ${ARG_LINK_LIBRARIES})
-    if (ARG_EXECUTABLES)
-        AddExecutables(DEP_NAME ${_DEP_NAME} PREFIX ${_DEP_PREFIX} EXECUTABLES ${ARG_EXECUTABLES})
-    endif ()
-    UnsetExternalVars()
 endmacro(ProcessAddLibrary)
+
+macro(ProcessFindPackage MODULE)
+    if (NOT _DEP_NAME OR ${_DEP_NAME}_ADDED_LIBRARY)
+        UnsetExternalVars()
+        return()
+    else ()
+        set(${_DEP_NAME}_ADDED_LIBRARY TRUE)
+        find_package(${MODULE} REQUIRED PATHS ${_DEP_PREFIX} NO_DEFAULT_PATH)
+        UnsetExternalVars()
+    endif ()
+endmacro(ProcessFindPackage)

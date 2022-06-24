@@ -11,12 +11,12 @@ function(FindLibrary target module source)
     endif ()
 endfunction(FindLibrary)
 
-function(FindHeader target module source)
+function(FindHeader target module source suffix)
     find_file(${target}
             NAMES ${module}.h ${module}.cc ${module}.c ${module}.hpp ${module}.hxx
             ${module}.H ${module}.hh ${module}.h++
             PATHS ${source}
-            PATH_SUFFIXES include
+            PATH_SUFFIXES include ${suffix}
             NO_DEFAULT_PATH)
     if (${target})
         set(${target}_FOUND TRUE PARENT_SCOPE)

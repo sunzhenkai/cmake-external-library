@@ -36,33 +36,34 @@ MARK_AS_ADVANCED(
 #include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 set(CHECK_FILE "check.cmake")
 set(LIBRARIES
-        fmt
-        protobuf
         boost
-        yaml-cpp
+        c-ares
+        cryptopp
+        curl
+        # dpdk
+        flatbuffers
+        # flex
+        fmt
+        gflags
+        gperftools
+        incubator-brpc
+        json
+        leveldb
+        libevent
+        lz4
         openssl
-        #        cryptopp
-        #        c-ares
-        #        lz4
-        #        valgrind
+        protobuf
         #        seastar
-        #        gflags
-        #        leveldb
-        #        libevent
-        #        thrift
-        #        flatbuffers
-        #        snappy
-        #        incubator-brpc
-        #        curl
-        #        spdlog
-        #        json
-        )
+        snappy
+        spdlog
+        thrift
+        #        valgrind
+        yaml-cpp)
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)
 
 # disable build library
 set(BUILD_DPDK FALSE)
-#set(CMAKE_CXX_STANDARD 17)
 
 message(STATUS "Speed up url: $ENV{SPEED_UP_URL}")
 

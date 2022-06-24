@@ -1,20 +1,15 @@
+include(${CMAKE_CURRENT_LIST_DIR}/../check.cmake)
 function(Process)
-    PrepareDeps(2.0.0 MODULES flatbuffers)
-    AddProject(
-            DEP_AUTHOR google
-            DEP_PROJECT ${_DEP_NAME}
-            DEP_TAG v${_DEP_VER}
-            SPEED_UP_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz
-            NINJA)
+    PrepareDep(2.0.0)
+    DownloadDep(AUTHOR google TAG v${_DEP_VER} SPEED_UP_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz)
+    Ninja()
+    PostProcess()
 endfunction(Process)
 Process()
 ProcessAddLibrary(EXECUTABLES flatc)
 
 macro(GenerateFlatbuffersMessage target)
-    set(options NoneOpt)
-    set(oneValueArgs OUTPUT PATH)
-    set(multiValueArgs FILES)
-    cmake_parse_arguments(P "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    cmake_parse_arguments(ARG "" "OUTPUT;PATH" "FILES" ${ARGN})
 
     file(GLOB T_FB_FILES ${P_FILES})
     get_property(flatbuffers_binary TARGET flatbuffers::bin::flatc PROPERTY LOCATION)
@@ -35,4 +30,6 @@ macro(GenerateFlatbuffersMessage target)
     file(GLOB ${target}_src ${P_OUTPUT}/*.h)
     file(GLOB ${target}_binary ${P_OUTPUT}/*.bfbs)
     include_directories(${${target}_include})
+
+    DoUnset(TARGETS T_FB_FILES ARG_OUTPUT ARG_PATH ARG_FILES proto_binary)
 endmacro(GenerateFlatbuffersMessage)
