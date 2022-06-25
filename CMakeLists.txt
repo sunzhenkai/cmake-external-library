@@ -40,9 +40,7 @@ set(LIBRARIES
         c-ares
         cryptopp
         curl
-        # dpdk
         flatbuffers
-        # flex
         fmt
         gflags
         gperftools
@@ -57,7 +55,6 @@ set(LIBRARIES
         snappy
         spdlog
         thrift
-        #        valgrind
         yaml-cpp)
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)
