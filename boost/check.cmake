@@ -1,24 +1,25 @@
+include(${CMAKE_CURRENT_LIST_DIR}/../check.cmake)
+set(BOOST_VERSION 1.76.0)
 # https://programming.vip/docs/boost-compiler-installation-under-linux.html
 function(Process)
-    PrepareDeps(1.76.0 MODULES boost_system)
-    set(BOOST_BUILD_ARGS toolset=gcc variant=release debug-symbols=on link=static runtime-link=shared
-            threadapi=pthread threading=multi cxxflags="-fPIC -std=c++${CMAKE_CXX_STANDARD}"
-            --without-mpi --without-python)
-    set(B2_DIR ${CMAKE_CURRENT_LIST_DIR}/src/tools/build)
-    AddProject(DEP_AUTHOR apache
-            DEP_PROJECT ${_DEP_NAME}
+    PrepareDep(${BOOST_VERSION} MODULES boost_system)
+    DownloadDep(
             DEP_URL https://boostorg.jfrog.io/artifactory/main/release/${_DEP_VER}/source/${_DEP_NAME}_${_DEP_VER_}.tar.gz
             SPEED_UP_FILE ${_DEP_NAME}_${_DEP_VER_}.tar.gz)
-    AddProject(B2INSTALL_ENV PATH=${B2_DIR}:$ENV{PATH}
-            BOOTSTRAP_SRC_DIR ${B2_DIR}
-            B2INSTALL_SRC_DIR ${B2_DIR}
-            BOOTSTRAP_ARGS --with-toolset=cc
-            BOOTSTRAP B2INSTALL)
-    AddProject(B2INSTALL_ENV PATH=${_DEP_PREFIX}/bin:$ENV{PATH}
-            B2BUILD_ENV PATH=${_DEP_PREFIX}/bin:$ENV{PATH}
-            BOOTSTRAP_ARGS --with-toolset=gcc --without-libraries=mpi,python,graph,graph_parallel
-            B2BUILD_ARGS ${BOOST_BUILD_ARGS}
-            B2INSTALL_ARGS ${BOOST_BUILD_ARGS}
-            BOOTSTRAP B2BUILD B2INSTALL)
+    set(B2DIR ${CMAKE_CURRENT_LIST_DIR}/src/tools/build)
+    set(ARGS toolset=gcc variant=release debug-symbols=on link=static runtime-link=shared
+            threadapi=pthread threading=multi cxxflags="-fPIC -std=c++${CMAKE_CXX_STANDARD}"
+            --without-mpi --without-python)
+    BOOTSTRAP(SRC ${B2DIR} ARGS --with-toolset=cc ENV PATH=${B2DIR}:$ENV{PATH})
+    B2Build(SRC ${B2DIR} ARGS --with-toolset=cc ENV PATH=${B2DIR}:$ENV{PATH})
+    B2Install(SRC ${B2DIR} ARGS --with-toolset=cc ENV PATH=${B2DIR}:$ENV{PATH} DEST bin/b2)
+    B2Build(ENV PATH=${_DEP_PREFIX}/bin:$ENV{PATH} ARGS ${ARGS})
+    B2Install(ENV PATH=${_DEP_PREFIX}/bin:$ENV{PATH} ARGS ${ARGS})
+
+    set(BOOST_ROOT ${_DEP_PREFIX} PARENT_SCOPE)
+    PostProcess()
 endfunction(Process)
 Process()
+UnsetExternalVars()
+set(Boost_NO_SYSTEM_PATHS ON)
+find_package(Boost 1.76 COMPONENTS ALL)
