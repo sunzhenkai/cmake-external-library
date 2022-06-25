@@ -36,6 +36,7 @@ MARK_AS_ADVANCED(
 #include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 set(CHECK_FILE "check.cmake")
 set(LIBRARIES
+        absl
         boost
         c-ares
         cryptopp
@@ -52,6 +53,7 @@ set(LIBRARIES
         lz4
         openssl
         protobuf
+        re2
         rocksdb
         seastar
         snappy

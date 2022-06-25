@@ -292,7 +292,7 @@ function(CMakeNinja)
 endfunction(CMakeNinja)
 
 function(NinjaBuild)
-    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${SRC}/PHASE_NINJA_BUILD)
+    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${_DEP_BUILD_DIR}/PHASE_NINJA_BUILD)
         message(STATUS "Building ${_DEP_NAME}")
         execute_process(
                 COMMAND ninja
@@ -302,7 +302,7 @@ function(NinjaBuild)
             message(FATAL_ERROR "Building ${_DEP_NAME} - FAIL")
         else ()
             message(STATUS "Building ${_DEP_NAME} - done")
-            file(WRITE ${SRC}/PHASE_NINJA_BUILD "done")
+            file(WRITE ${_DEP_BUILD_DIR}/PHASE_NINJA_BUILD "done")
         endif ()
     endif ()
 endfunction(NinjaBuild)
