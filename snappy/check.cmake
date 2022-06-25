@@ -1,25 +1,3 @@
-#get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
-#string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
-#
-## template variables
-#set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
-#set(_NEED_REBUILD TRUE)
-#set(_DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
-#
-#set(_DEP_VER 1.1.9)
-#if (DEFINED ENV{SPEED_UP_URL})
-#    set(_DEP_URL $ENV{SPEED_UP_URL}/submodule-${_DEP_NAME}-${_DEP_VER}.tar.gz)
-#else ()
-#    set(_DEP_VER 2b63814b15a2aaae54b7943f0cd935892fae628f)
-#    set(_DEP_URL https://github.com/google/snappy.git)
-#endif ()
-#
-#    ExtractDep()
-#    set(_PIC_OFF ON)
-#    CMakeNinja()
-#    NinjaBuild()
-#    NinjaInstall()
-#find_package(Snappy REQUIRED)
 include(${CMAKE_CURRENT_LIST_DIR}/../check.cmake)
 function(Process)
     PrepareDep(1.1.9)
