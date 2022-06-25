@@ -5,7 +5,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../protobuf/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../re2/check.cmake)
 
 function(Process)
-    PrepareDep(1.47.0)
+    PrepareDep(1.47.0 MODULES gpr grpc grpc++)
     DownloadDep(TAG v${_DEP_VER} SPEED_UP_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz)
     Ninja(ARGS -DgRPC_INSTALL=ON
             -DgRPC_BUILD_TESTS=OFF
