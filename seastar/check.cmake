@@ -11,7 +11,7 @@ function(Process)
     set(20_05 59f7b32d892191bfae336afcdf6a6d4bd236c183)
     set(19_06 aa46d84646b381da03dd9126015292686bd078da)
     set(18_08 7dea64159e2b4a27a740e15d76665e7fccd1d689)
-    PrepareDep(${19_06} MODULES seastar)
+    PrepareDep(${20_05} MODULES seastar)
     #    execute_process(
     #            COMMAND env
     #            sudo ./install-dependencies.sh
@@ -36,8 +36,7 @@ function(Process)
     DownloadDep(GIT_REPOSITORY https://github.com/scylladb/seastar.git
             SPEED_UP_FILE seastar-submodule-${_DEP_VER}.tar.gz)
     Configure(ARGS --mode=release)
-    #    Ninja(BUILD_TYPE RelWithDebInfo ARGS ${NINJA_DEFINE})
-    Ninja()
+    Ninja(BUILD_TYPE RelWithDebInfo ARGS ${NINJA_DEFINE})
     PostProcess()
 endfunction(Process)
 Process()
