@@ -44,6 +44,7 @@ set(LIBRARIES
         fmt
         gflags
         gperftools
+        grpc
         incubator-brpc
         json
         leveldb
@@ -51,6 +52,7 @@ set(LIBRARIES
         lz4
         openssl
         protobuf
+        rocksdb
         seastar
         snappy
         spdlog
