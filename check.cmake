@@ -28,13 +28,6 @@ macro(SetTemplateVariable version)
     # _NEED_REBUILD _DEP_INSTALLED_LIBRARY
 
     get_filename_component(_DEP_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
-
-    if (${_DEP_NAME}_ADDED)
-        return()
-    else ()
-        set(${_DEP_NAME}_ADDED TRUE PARENT_SCOPE)
-    endif ()
-
     string(TOUPPER ${_DEP_NAME} _DEP_UNAME)
     set(_DEP_CUR_DIR ${CMAKE_CURRENT_LIST_DIR})
     set(_DEP_BUILD_DIR ${_DEP_CUR_DIR}/build)
@@ -55,7 +48,6 @@ macro(SetTemplateVariable version)
     string(REPLACE "." "_" _DEP_VER_ "${_DEP_VER}")
     SetDepPrefix(${_DEP_NAME} ${_DEP_UNAME} ${_DEP_CUR_DIR})
     CheckLibraryInstall()
-
     message(STATUS "[SetTemplateVariable] _DEP_NAME=${_DEP_NAME} _DEP_UNAME=${_DEP_UNAME} "
             "_DEP_CUR_DIR=${_DEP_CUR_DIR} _DEP_PREFIX=${_DEP_PREFIX} _DEP_BUILD_DIR=${_DEP_BUILD_DIR} "
             "_DEP_SRC_DIR=${_DEP_SRC_DIR} _NEED_REBUILD=${_NEED_REBUILD} _DEP_VER=${_DEP_VER} "
@@ -306,7 +298,7 @@ function(NinjaBuild)
 endfunction(NinjaBuild)
 
 function(NinjaInstall)
-    if (ARG_WITH_ROOT)
+    if (ARG_ROOT_PERMISSION)
         set(_PERMISSION_ROLE "sudo")
     endif ()
 
@@ -324,7 +316,7 @@ function(NinjaInstall)
 endfunction(NinjaInstall)
 
 function(Ninja)
-    cmake_parse_arguments(ARG "PIC_OFF;WITH_ROOT" "SRC;BUILD_TYPE" "ARGS" ${ARGN})
+    cmake_parse_arguments(ARG "PIC_OFF;ROOT_PERMISSION" "SRC;BUILD_TYPE" "ARGS" ${ARGN})
     SetSrc()
     CMakeNinja()
     NinjaBuild()

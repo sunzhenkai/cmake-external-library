@@ -1,6 +1,11 @@
 function(FindLibrary target module source)
+    set(NMS ${module} lib${module})
+    if (module MATCHES "^lib")
+        string(SUBSTRING ${module} 3 -1 md)
+        list(APPEND NMS ${md})
+    endif ()
     find_library(${target}
-            NAMES ${module} lib${module}
+            NAMES ${NMS}
             PATHS ${source}/src ${source}/build ${source}
             PATH_SUFFIXES src .libs lib lib64 lib/.libs lib64/.libs
             NO_DEFAULT_PATH)

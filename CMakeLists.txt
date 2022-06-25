@@ -53,7 +53,7 @@ set(LIBRARIES
         lz4
         openssl
         protobuf
-        #        seastar
+        seastar
         snappy
         spdlog
         thrift
@@ -64,6 +64,10 @@ set(BUILD_EXTERNAL_LIBRARY TRUE)
 
 # disable build library
 set(BUILD_DPDK FALSE)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "-lstdc++fs")
+set(CMAKE_REQUIRED_FLAGS -std=gnu++17)
+#find_package(StdFilesystem REQUIRED)
 
 message(STATUS "Speed up url: $ENV{SPEED_UP_URL}")
 
