@@ -502,8 +502,7 @@ macro(PostProcess)
 endmacro(PostProcess)
 
 macro(AddLibrary MODULE)
-    set(ARGS PREFIX LINK_LIBRARIES COMPILE_OPTIONS)
-    cmake_parse_arguments(ARG "" "${ARGS}" "SUBMODULES" ${ARGN})
+    cmake_parse_arguments(ARG "" "PREFIX" "SUBMODULES;COMPILE_OPTIONS;LINK_LIBRARIES" ${ARGN})
 
     if (NOT ARG_PREFIX)
         message(FATAL_ERROR "PREFIX should not be empty")
@@ -518,7 +517,8 @@ macro(AddLibrary MODULE)
                     PATHS ${ARG_PREFIX}
                     PATH_SUFFIXES lib lib64
                     NO_DEFAULT_PATH)
-            message(STATUS "[AddLibrary] TARGET=${TGT} LIB=${add_library_${MODULE}_${I}}")
+            message(STATUS "[AddLibrary] TARGET=${TGT} LIB=${add_library_${MODULE}_${I}} "
+                    "LINK_LIBRARIES=${ARG_LINK_LIBRARIES} COMPILE_OPTIONS=${ARG_COMPILE_OPTIONS}")
             set_target_properties(${TGT} PROPERTIES
                     # IMPORTED_LOCATION "${ARG_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${I}${CMAKE_STATIC_LIBRARY_SUFFIX}"
                     IMPORTED_LOCATION "${add_library_${MODULE}_${I}}"
@@ -565,9 +565,7 @@ macro(UnsetExternalVars)
 endmacro(UnsetExternalVars)
 
 macro(ProcessAddLibrary)
-    set(ARGS COMPILE_OPTIONS LINK_LIBRARIES)
-    set(MULTI_ARGS EXECUTABLES)
-    cmake_parse_arguments(ARG "" "${ARGS}" "${MULTI_ARGS}" ${ARGN})
+    cmake_parse_arguments(ARG "" "" "EXECUTABLES;COMPILE_OPTIONS;LINK_LIBRARIES" ${ARGN})
 
     if (NOT _DEP_NAME OR ${_DEP_NAME}_ADDED_LIBRARY)
         UnsetExternalVars()

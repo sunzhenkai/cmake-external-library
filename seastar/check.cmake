@@ -6,6 +6,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../yaml-cpp/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cryptopp/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../protobuf/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../openssl/check.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../lz4/check.cmake)
 
 function(Process)
     set(20_05 59f7b32d892191bfae336afcdf6a6d4bd236c183)
@@ -42,5 +43,5 @@ endfunction(Process)
 Process()
 ProcessAddLibrary(
         COMPILE_OPTIONS "-std=c++17;-U_FORTIFY_SOURCE;-Wno-maybe-uninitialized;-Wno-error=unused-result"
-        LINK_LIBRARIES "Boost::boost;Boost::program_options;Boost::thread;c-ares::c-ares;cryptopp::cryptopp;fmt::fmt;lz4::lz4;\$<LINK_ONLY:dl>;\$<LINK_ONLY:Boost::filesystem>;\$<LINK_ONLY:GnuTLS::gnutls>;\$<LINK_ONLY:StdAtomic::atomic>;\$<LINK_ONLY:StdFilesystem::filesystem>;\$<LINK_ONLY:lksctp-tools::lksctp-tools>;\$<LINK_ONLY:protobuf::libprotobuf>;\$<LINK_ONLY:rt::rt>;\$<LINK_ONLY:yaml-cpp::yaml-cpp>;Concepts::concepts;\$<LINK_ONLY:LinuxMembarrier::membarrier>"
+        LINK_LIBRARIES "Boost::boost;Boost::program_options;Boost::thread;c-ares::cares;cryptopp::cryptopp;fmt::fmt;lz4::lz4;\$<LINK_ONLY:dl>;\$<LINK_ONLY:Boost::filesystem>;\$<LINK_ONLY:protobuf::protobuf>;\$<LINK_ONLY:rt>;\$<LINK_ONLY:yaml-cpp::yaml-cpp>"
 )
