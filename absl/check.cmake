@@ -5,7 +5,7 @@ function(Process)
     endif ()
 
     PrepareDep(20211102.0 MODULES absl_base)
-    DownloadDep(AUTHOR abseil SPEED_UP_FILE abseil-cpp-${_DEP_VER}.tar.gz)
+    DownloadDep(AUTHOR abseil PROJECT abseil-cpp SPEED_UP_FILE abseil-cpp-${_DEP_VER}.tar.gz)
     Ninja(ARGS -DABSL_BUILD_TESTING=OFF -DABSL_USE_GOOGLETEST_HEAD=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD})
     PostProcess()
 endfunction(Process)

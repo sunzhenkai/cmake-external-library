@@ -180,7 +180,7 @@ macro(CheckDest)
 endmacro(CheckDest)
 
 function(BOOTSTRAP)
-    cmake_parse_arguments(ARG "" "SRC;ENV;ARGS" "" ${ARGN})
+    cmake_parse_arguments(ARG "" "SRC" "ENV;ARGS" ${ARGN})
     SetSrc()
     if (NOT EXISTS ${SRC}/PHASE_BOOTSTRAP)
         message(STATUS "Bootstrap ${_DEP_NAME} SRC=${SRC} ENV=${ARG_ENV} ARGS=${ARGS}. "
@@ -200,7 +200,7 @@ function(BOOTSTRAP)
 endfunction(BOOTSTRAP)
 
 function(B2Build)
-    cmake_parse_arguments(ARG "" "SRC;ENV;ARGS" "" ${ARGN})
+    cmake_parse_arguments(ARG "" "SRC" "ENV;ARGS" ${ARGN})
     SetSrc()
 
     if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${SRC}/PHASE_B2BUILD)
@@ -221,7 +221,7 @@ function(B2Build)
 endfunction(B2Build)
 
 function(B2Install)
-    cmake_parse_arguments(ARG "" "SRC;ENV;ARGS;DEST" "" ${ARGN})
+    cmake_parse_arguments(ARG "" "SRC;DEST" "ENV;ARGS" ${ARGN})
     SetSrc()
     CheckDest()
 

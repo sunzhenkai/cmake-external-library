@@ -3,8 +3,7 @@ set(BOOST_VERSION 1.76.0)
 # https://programming.vip/docs/boost-compiler-installation-under-linux.html
 function(Process)
     PrepareDep(${BOOST_VERSION} MODULES boost_system)
-    DownloadDep(
-            DEP_URL https://boostorg.jfrog.io/artifactory/main/release/${_DEP_VER}/source/${_DEP_NAME}_${_DEP_VER_}.tar.gz
+    DownloadDep(DEP_URL https://boostorg.jfrog.io/artifactory/main/release/${_DEP_VER}/source/${_DEP_NAME}_${_DEP_VER_}.tar.gz
             SPEED_UP_FILE ${_DEP_NAME}_${_DEP_VER_}.tar.gz)
     set(B2DIR ${CMAKE_CURRENT_LIST_DIR}/src/tools/build)
     set(ARGS toolset=gcc variant=release debug-symbols=on link=static runtime-link=shared
