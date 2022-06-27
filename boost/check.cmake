@@ -8,11 +8,13 @@ function(Process)
             SPEED_UP_FILE ${_DEP_NAME}_${_DEP_VER_}.tar.gz)
     set(B2DIR ${CMAKE_CURRENT_LIST_DIR}/src/tools/build)
     set(ARGS toolset=gcc variant=release debug-symbols=on link=static runtime-link=shared
-            threadapi=pthread threading=multi cxxflags="-fPIC -std=c++${CMAKE_CXX_STANDARD}"
-            --without-mpi --without-python)
-    BOOTSTRAP(SRC ${B2DIR} ARGS --with-toolset=cc ENV PATH=${B2DIR}:$ENV{PATH})
-    B2Build(SRC ${B2DIR} ARGS --with-toolset=cc ENV PATH=${B2DIR}:$ENV{PATH})
-    B2Install(SRC ${B2DIR} ARGS --with-toolset=cc ENV PATH=${B2DIR}:$ENV{PATH} DEST bin/b2)
+            threadapi=pthread threading=multi --without-mpi --without-python)
+    # build b2
+    BOOTSTRAP(SRC ${B2DIR} ARGS --with-toolset=gcc ENV PATH=${B2DIR}:$ENV{PATH})
+    B2Build(SRC ${B2DIR} ARGS --with-toolset=gcc ENV PATH=${B2DIR}:$ENV{PATH})
+    B2Install(SRC ${B2DIR} ARGS --with-toolset=gcc ENV PATH=${B2DIR}:$ENV{PATH} DEST bin/b2)
+    # build boost
+    BOOTSTRAP(ENV PATH=${_DEP_PREFIX}/bin:$ENV{PATH} ARGS --with-toolset=gcc)
     B2Build(ENV PATH=${_DEP_PREFIX}/bin:$ENV{PATH} ARGS ${ARGS})
     B2Install(ENV PATH=${_DEP_PREFIX}/bin:$ENV{PATH} ARGS ${ARGS})
 
