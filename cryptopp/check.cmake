@@ -2,7 +2,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../check.cmake)
 
 function(Process)
     PrepareDep(8.6.0)
-    DownloadDep(TAG ${_DEP_UNAME}_${_DEP_VER_} SPEED_UP_FILE ${_DEP_NAME}-${_DEP_UNAME}_${_DEP_VER_}.tar.gz)
+    DownloadDep(AUTHOR weidai11 TAG ${_DEP_UNAME}_${_DEP_VER_} SPEED_UP_FILE ${_DEP_NAME}-${_DEP_UNAME}_${_DEP_VER_}.tar.gz)
     Configure()
     MakeBuild()
     MakeInstall()
