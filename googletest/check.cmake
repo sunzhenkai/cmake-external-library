@@ -1,0 +1,10 @@
+include(${CMAKE_CURRENT_LIST_DIR}/../check.cmake)
+
+function(Process)
+    PrepareDep(1.12.1 MODULES gtest gmock gmock_main)
+    DownloadDep(TAG release-${_DEP_VER} AUTHOR google SPEED_UP_FILE ${_DEP_NAME}-release-${_DEP_VER}.tar.gz)
+    Ninja(ARGS -DBUILD_SHARED_LIBS=OFF)
+    PostProcess()
+endfunction(Process)
+Process()
+ProcessAddLibrary()

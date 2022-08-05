@@ -7,3 +7,5 @@ function(Process)
 endfunction(Process)
 Process()
 ProcessFindPackage(nlohmann_json)
+
+# link nlohmann_json

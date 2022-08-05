@@ -111,7 +111,6 @@ endfunction(CheckVersion)
 
 macro(PrepareDep version)
     cmake_parse_arguments(ARG "FIND_BY_HEADER" "" "MODULES;FIND_SUFFIX" ${ARGN})
-
     SetTemplateVariable(${version})
     CheckVersion()
 endmacro(PrepareDep)
@@ -182,7 +181,7 @@ endmacro(CheckDest)
 function(BOOTSTRAP)
     cmake_parse_arguments(ARG "" "SRC" "ENV;ARGS" ${ARGN})
     SetSrc()
-    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${SRC}/PHASE_BOOTSTRAP)
+    if (NOT EXISTS ${SRC}/PHASE_BOOTSTRAP)
         message(STATUS "Bootstrap ${_DEP_NAME} SRC=${SRC} ENV=${ARG_ENV} ARGS=${ARGS}. "
                 "CC=${CMAKE_C_COMPILER}, CXX=${CMAKE_CXX_COMPILER}.")
         execute_process(
