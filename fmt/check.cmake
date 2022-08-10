@@ -7,4 +7,6 @@ function(Process)
     PostProcess()
 endfunction(Process)
 Process()
-ProcessAddLibrary()
+ProcessFindPackage(fmt)
+
+# link fmt::fmt
