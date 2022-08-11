@@ -7,21 +7,25 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cryptopp/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../protobuf/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../openssl/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../lz4/check.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../valgrind/check.cmake)
 
-set(INSTALL_DEPS OFF)
 function(Process)
     set(20_05 59f7b32d892191bfae336afcdf6a6d4bd236c183)
     set(19_06 aa46d84646b381da03dd9126015292686bd078da)
     set(18_08 7dea64159e2b4a27a740e15d76665e7fccd1d689)
-    set(LATEST 4a2627ff04629e735528996c0caa599cf4a1270d)
-    PrepareDep(${19_06} MODULES seastar)
+    PrepareDep(${20_05} MODULES seastar)
+    #    execute_process(
+    #            COMMAND env
+    #            sudo ./install-dependencies.sh
+    #            WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
+    #            RESULT_VARIABLE rc)
     set(NINJA_DEFINE
             -DSeastar_APPS=OFF
             -DSeastar_DEMOS=OFF
             -DSeastar_DOCS=OFF
             -DSeastar_EXCLUDE_TESTS_FROM_ALL=ON
             -DSeastar_CXX_DIALECT=c++${CMAKE_CXX_STANDARD}
-#            -DSeastar_GCC6_CONCEPTS=ON
+            #            -DSeastar_GCC6_CONCEPTS=ON
             -DSeastar_NUMA=OFF
             -DSeastar_HWLOC=OFF
             -DSeastar_STD_OPTIONAL_VARIANT_STRINGVIEW=ON
@@ -32,13 +36,6 @@ function(Process)
             -DCMAKE_BUILD_TYPE=RelWithDebInfo)
     DownloadDep(GIT_REPOSITORY https://github.com/scylladb/seastar.git
             SPEED_UP_FILE seastar-submodule-${_DEP_VER}.tar.gz)
-    if (INSTALL_DEPS)
-        execute_process(
-                COMMAND env
-                sudo ./install-dependencies.sh
-                WORKING_DIRECTORY ${_DEP_CUR_DIR}/src
-                RESULT_VARIABLE rc)
-    endif ()
     Configure(ARGS --mode=release)
     Ninja(BUILD_TYPE RelWithDebInfo ARGS ${NINJA_DEFINE})
     PostProcess()
@@ -46,5 +43,5 @@ endfunction(Process)
 Process()
 ProcessAddLibrary(
         COMPILE_OPTIONS "-std=c++17;-U_FORTIFY_SOURCE;-Wno-maybe-uninitialized;-Wno-error=unused-result"
-        LINK_LIBRARIES "Boost::boost;Boost::program_options;Boost::thread;c-ares::cares;cryptopp::cryptopp;fmt::fmt;lz4::lz4;\$<LINK_ONLY:dl>;\$<LINK_ONLY:Boost::filesystem>;\$<LINK_ONLY:protobuf::protobuf>;\$<LINK_ONLY:rt>;\$<LINK_ONLY:yaml-cpp::yaml-cpp>"
+        LINK_LIBRARIES "valgrind::valgrind;Boost::boost;Boost::program_options;Boost::thread;c-ares::cares;cryptopp::cryptopp;fmt::fmt;lz4::lz4;\$<LINK_ONLY:dl>;\$<LINK_ONLY:Boost::filesystem>;\$<LINK_ONLY:protobuf::protobuf>;\$<LINK_ONLY:rt>;\$<LINK_ONLY:yaml-cpp::yaml-cpp>"
 )

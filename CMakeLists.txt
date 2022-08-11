@@ -59,7 +59,8 @@ set(LIBRARIES
         snappy
         spdlog
         thrift
-        yaml-cpp)
+        yaml-cpp
+        valgrind)
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)
 

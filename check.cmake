@@ -241,6 +241,27 @@ function(B2Install)
     endif ()
 endfunction(B2Install)
 
+function(Autogen)
+    CheckDest()
+    if (NOT CHECK_DEST_RESULT AND EXISTS ${SRC}/PHASE_AUTOGEN)
+        message(STATUS "Autogen ${_DEP_NAME}")
+        execute_process(
+                COMMAND env
+                CC=${CMAKE_C_COMPILER}
+                CXX=${CMAKE_CXX_COMPILER}
+                CFLAGS=-fPIC
+                CXXFLAGS=-fPIC
+                ./autogen.sh
+                WORKING_DIRECTORY ${SRC}
+                RESULT_VARIABLE rc)
+        if (NOT "${rc}" STREQUAL "0")
+            message(FATAL_ERROR "Autogen ${_DEP_NAME} - FAIL")
+        endif ()
+        message(STATUS "Autogen ${_DEP_NAME} - done")
+        file(WRITE ${SRC}/PHASE_AUTOGEN "done")
+    endif ()
+endfunction(Autogen)
+
 function(CMakeNinja)
     if (ARG_PIC_OFF)
         set(_PIC_FLAG "-DCMAKE_POSITION_INDEPENDENT_CODE=OFF")
@@ -291,7 +312,8 @@ function(CMakeNinja)
 endfunction(CMakeNinja)
 
 function(NinjaBuild)
-    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${_DEP_BUILD_DIR}/PHASE_NINJA_BUILD)
+    SetSrc()
+    if (NOT _DEP_INSTALLED_LIBRARY AND NOT EXISTS ${SRC}/PHASE_NINJA_BUILD)
         message(STATUS "Building ${_DEP_NAME}")
         execute_process(
                 COMMAND ninja
@@ -301,7 +323,7 @@ function(NinjaBuild)
             message(FATAL_ERROR "Building ${_DEP_NAME} - FAIL")
         else ()
             message(STATUS "Building ${_DEP_NAME} - done")
-            file(WRITE ${_DEP_BUILD_DIR}/PHASE_NINJA_BUILD "done")
+            file(WRITE ${SRC}/PHASE_NINJA_BUILD "done")
         endif ()
     endif ()
 endfunction(NinjaBuild)
@@ -512,7 +534,7 @@ macro(AddLibrary MODULE)
         if (NOT TARGET ${TGT})
             add_library(${TGT} STATIC IMPORTED GLOBAL)
             find_library(add_library_${MODULE}_${I}
-                    NAMES lib${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}
+                    NAMES lib${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I} ${I}
                     PATHS ${ARG_PREFIX}
                     PATH_SUFFIXES lib lib64
                     NO_DEFAULT_PATH)
@@ -594,3 +616,69 @@ macro(ProcessFindPackage MODULE)
         UnsetExternalVars()
     endif ()
 endmacro(ProcessFindPackage)
+
+macro(FindPkgStandardArgs)
+    if (NOT _DEP_NAME OR ${_DEP_NAME}_FOUND_LIBRARY)
+        UnsetExternalVars()
+        return()
+    endif ()
+
+    cmake_parse_arguments(ARG "" "MODULE;HEADER_FILE;BINARY_FILE" "" ${ARGN})
+    if (NOT ARG_MODULE)
+        set(ARG_MODULE ${_DEP_NAME})
+    endif ()
+    if (NOT ARG_HEADER_FILE)
+        set(ARG_HEADER_FILE ${_DEP_NAME})
+    endif ()
+    if (NOT ARG_BINARY_FILE)
+        set(ARG_BINARY_FILE ${_DEP_NAME})
+    endif ()
+
+    set(${ARG_MODULE}_INCLUDE_PATH PATHS "${_DEP_PREFIX}/include" NO_DEFAULT_PATH)
+    set(${ARG_MODULE}_BINARY_PATH PATHS "${_DEP_PREFIX}/bin" NO_DEFAULT_PATH)
+
+    find_path(${ARG_MODULE}_INCLUDE_DIR ${ARG_HEADER_FILE} HINTS ${${ARG_MODULE}_INCLUDE_PATH})
+    find_program(${ARG_MODULE}_EXECUTABLE NAMES ${ARG_BINARY_FILE} PATH ${${ARG_MODULE}_BINARY_PATH})
+
+    include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(${ARG_MODULE} DEFAULT_MSG ${ARG_MODULE}_INCLUDE_DIR ${ARG_MODULE}_EXECUTABLE)
+
+    mark_as_advanced(${ARG_MODULE}_INCLUDE_DIR ${ARG_MODULE}_EXECUTABLE)
+    set(${_DEP_NAME}_FOUND_LIBRARY TRUE)
+endmacro(FindPkgStandardArgs)
+
+macro(FindPkgConfig MODULE)
+    find_package(PkgConfig)
+    pkg_search_module(${MODULE}_PC ${MODULE})
+    find_path(${MODULE}_INCLUDE_DIR NAMES valgrind/valgrind.h HINTS ${${MODULE}_PC_INCLUDEDIR})
+    mark_as_advanced(${MODULE}_PC_INCLUDEDIR)
+    include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(${MODULE} REQUIRED_VARS ${MODULE}_INCLUDE_DIR)
+    set(${MODULE}_INCLUDE_DIRS ${${MODULE}_INCLUDE_DIR})
+    set(TGT ${MODULE}::${MODULE})
+    if (${MODULE}_FOUND AND NOT (TARGET ${TGT}))
+        add_library(${TGT} INTERFACE IMPORTED)
+        set_target_properties(${TGT} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${${MODULE}_INCLUDE_DIRS})
+    endif ()
+    UnsetExternalVars()
+
+    #    if (NOT TARGET ${TGT})
+    #        add_library(${TGT} STATIC IMPORTED GLOBAL)
+    #        find_library(add_library_${MODULE}_${I}
+    #                NAMES lib${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}${CMAKE_STATIC_LIBRARY_SUFFIX} ${I}
+    #                PATHS ${ARG_PREFIX}
+    #                PATH_SUFFIXES lib lib64
+    #                NO_DEFAULT_PATH)
+    #        message(STATUS "[AddLibrary] TARGET=${TGT} LIB=${add_library_${MODULE}_${I}} "
+    #                "LINK_LIBRARIES=${ARG_LINK_LIBRARIES} COMPILE_OPTIONS=${ARG_COMPILE_OPTIONS}")
+    #        set_target_properties(${TGT} PROPERTIES
+    #                # IMPORTED_LOCATION "${ARG_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${I}${CMAKE_STATIC_LIBRARY_SUFFIX}"
+    #                IMPORTED_LOCATION "${add_library_${MODULE}_${I}}"
+    #                INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
+    #                INTERFACE_INCLUDE_DIRECTORIES ${ARG_PREFIX}/include
+    #                # i.e. pthread;z
+    #                INTERFACE_LINK_LIBRARIES "${ARG_LINK_LIBRARIES}"
+    #                # i.e. -pthread
+    #                INTERFACE_COMPILE_OPTIONS "${ARG_COMPILE_OPTIONS}")
+    #    else ()
+endmacro(FindPkgConfig)

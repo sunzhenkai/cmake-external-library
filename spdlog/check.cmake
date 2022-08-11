@@ -1,6 +1,6 @@
 include(${CMAKE_CURRENT_LIST_DIR}/../check.cmake)
 function(Process)
-    PrepareDep(1.9.2)
+    PrepareDep(1.9.2 MODULES spdlogd)
     DownloadDep(AUTHOR gabime TAG v${_DEP_VER} SPEED_UP_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz)
     Ninja()
     PostProcess()
