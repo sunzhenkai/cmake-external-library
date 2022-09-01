@@ -1,9 +1,9 @@
 include(${CMAKE_CURRENT_LIST_DIR}/../check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../gflags/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../leveldb/check.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../boost/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../thrift/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../protobuf/check.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/../boost/check.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../snappy/check.cmake)
 
 function(Process)

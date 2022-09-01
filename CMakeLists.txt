@@ -60,6 +60,7 @@ set(LIBRARIES
         spdlog
         thrift
         yaml-cpp
+        rapidjson
         valgrind)
 
 set(BUILD_EXTERNAL_LIBRARY TRUE)

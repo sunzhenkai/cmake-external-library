@@ -7,7 +7,7 @@ function(Process)
     # 0.9.3.1 0.11.0 0.14.2 0.15.0
     PrepareDep(0.11.0 MODULES thrift thriftz thriftnb)
     DownloadDep(AUTHOR apache SPEED_UP_FILE ${_DEP_NAME}-${_DEP_VER}.tar.gz)
-    Ninja()
+    Ninja(ARGS -DBoost_USE_STATIC_LIBS=ON)
     PostProcess()
 endfunction(Process)
 Process()
