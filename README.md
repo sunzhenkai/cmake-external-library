@@ -1,3 +1,6 @@
+# NOTICE
+migrated to [https://github.com/sunzhenkai/cmake-external-library](https://github.com/sunzhenkai/cmake-external-library)
+
 # Description
 Cmake external library.
 
